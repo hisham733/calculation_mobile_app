@@ -16,7 +16,7 @@ jobs:
           channel: 'stable'
 
       - run: flutter pub get
-      - run: flutter build web --release --base-href /calculation_mobile_app/
+      - run: flutter build web --release --base-href /calculation_mobile_app/ --no-tree-shake-icons
 
       - uses: actions/upload-pages-artifact@v3
         with:

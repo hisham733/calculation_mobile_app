@@ -302,7 +302,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     if (picked != null) setState(() => _date = picked);
   }
 
-  void _save() {
+  Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedCategory == null || _paidBy == null) return;
 
@@ -337,18 +337,18 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     );
 
     if (_isEditing) {
-      _storage.updateExpense(expense);
+      await _storage.updateExpense(expense);
     } else {
-      _storage.insertExpense(expense);
+      await _storage.insertExpense(expense);
     }
+    if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(_isEditing ? 'Expense updated' : 'Expense added'),
         duration: const Duration(milliseconds: 800),
       ),
     );
-    Future.delayed(const Duration(milliseconds: 400), () {
-      if (context.mounted) Navigator.pop(context);
-    });
+    await Future.delayed(const Duration(milliseconds: 400));
+    if (context.mounted) Navigator.pop(context);
   }
 }

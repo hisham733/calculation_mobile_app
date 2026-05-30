@@ -84,7 +84,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
       if (_searchQuery.isNotEmpty) {
         final q = _searchQuery.toLowerCase();
         if (!e.description.toLowerCase().contains(q) &&
-            !e.notes.toLowerCase().contains(q)) return false;
+            !e.notes.toLowerCase().contains(q)) {
+          return false;
+        }
       }
       return true;
     }).toList();
