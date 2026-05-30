@@ -180,7 +180,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  String _userName(int id) {
+  String _userName(String id) {
     return _users.where((u) => u.id == id).firstOrNull?.name ?? '';
   }
 

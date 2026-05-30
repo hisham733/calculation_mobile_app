@@ -1,7 +1,7 @@
 enum SplitMode { percentage, individual }
 
 class Expense {
-  final int? id;
+  final String? id;
   final String description;
   final DateTime date;
   final double totalAmount;
@@ -10,8 +10,8 @@ class Expense {
   final double? splitPercentageB;
   final double? amountA;
   final double? amountB;
-  final int paidById;
-  final int categoryId;
+  final String paidById;
+  final String categoryId;
 
   Expense({
     this.id,
@@ -62,19 +62,19 @@ class Expense {
       };
 
   factory Expense.fromMap(Map<String, dynamic> map) => Expense(
-        id: map['id'] as int,
+        id: map['id'] as String?,
         description: map['description'] as String,
         date: DateTime.fromMillisecondsSinceEpoch(map['date'] as int),
-        totalAmount: map['total_amount'] as double,
+        totalAmount: (map['total_amount'] as num).toDouble(),
         splitMode: SplitMode.values.firstWhere(
           (e) => e.name == map['split_mode'],
           orElse: () => SplitMode.percentage,
         ),
-        splitPercentageA: map['split_percentage_a'] as double?,
-        splitPercentageB: map['split_percentage_b'] as double?,
-        amountA: map['amount_a'] as double?,
-        amountB: map['amount_b'] as double?,
-        paidById: map['paid_by_id'] as int,
-        categoryId: map['category_id'] as int,
+        splitPercentageA: (map['split_percentage_a'] as num?)?.toDouble(),
+        splitPercentageB: (map['split_percentage_b'] as num?)?.toDouble(),
+        amountA: (map['amount_a'] as num?)?.toDouble(),
+        amountB: (map['amount_b'] as num?)?.toDouble(),
+        paidById: map['paid_by_id'] as String,
+        categoryId: map['category_id'] as String,
       );
 }

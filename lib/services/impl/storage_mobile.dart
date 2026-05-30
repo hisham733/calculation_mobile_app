@@ -3,6 +3,7 @@ import 'package:path/path.dart';
 import '../../models/user_profile.dart';
 import '../../models/category.dart';
 import '../../models/expense.dart';
+import '../../helpers/id_generator.dart';
 import '../storage_service.dart';
 
 class StorageServiceMobile implements StorageService {
@@ -20,14 +21,14 @@ class StorageServiceMobile implements StorageService {
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
             color_value INTEGER NOT NULL
           )
         ''');
         await db.execute('''
           CREATE TABLE categories (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
             icon_code_point INTEGER NOT NULL,
             monthly_budget REAL
@@ -35,7 +36,7 @@ class StorageServiceMobile implements StorageService {
         ''');
         await db.execute('''
           CREATE TABLE expenses (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id TEXT PRIMARY KEY,
             description TEXT NOT NULL,
             date INTEGER NOT NULL,
             total_amount REAL NOT NULL,
@@ -44,8 +45,8 @@ class StorageServiceMobile implements StorageService {
             split_percentage_b REAL,
             amount_a REAL,
             amount_b REAL,
-            paid_by_id INTEGER NOT NULL,
-            category_id INTEGER NOT NULL,
+            paid_by_id TEXT NOT NULL,
+            category_id TEXT NOT NULL,
             FOREIGN KEY (paid_by_id) REFERENCES users(id),
             FOREIGN KEY (category_id) REFERENCES categories(id)
           )
@@ -58,16 +59,16 @@ class StorageServiceMobile implements StorageService {
   Database get _database => _db!;
 
   Future<void> _seed(Database db) async {
-    await db.insert('users', {'name': 'User A', 'color_value': 0xFF007AFF});
-    await db.insert('users', {'name': 'User B', 'color_value': 0xFFFF9500});
+    await db.insert('users', {'id': 'user_a', 'name': 'User A', 'color_value': 0xFF007AFF});
+    await db.insert('users', {'id': 'user_b', 'name': 'User B', 'color_value': 0xFFFF9500});
 
     final categories = [
-      {'name': 'Groceries', 'icon_code_point': 0xe8cc, 'monthly_budget': 800.0},
-      {'name': 'Dining', 'icon_code_point': 0xe56c, 'monthly_budget': 400.0},
-      {'name': 'Utilities', 'icon_code_point': 0xe3b3, 'monthly_budget': 200.0},
-      {'name': 'Transport', 'icon_code_point': 0xe530, 'monthly_budget': 150.0},
-      {'name': 'Entertainment', 'icon_code_point': 0xe404, 'monthly_budget': 200.0},
-      {'name': 'Other', 'icon_code_point': 0xe3e9, 'monthly_budget': null},
+      {'id': 'cat_1', 'name': 'Groceries', 'icon_code_point': 0xe8cc, 'monthly_budget': 800.0},
+      {'id': 'cat_2', 'name': 'Dining', 'icon_code_point': 0xe56c, 'monthly_budget': 400.0},
+      {'id': 'cat_3', 'name': 'Utilities', 'icon_code_point': 0xe3b3, 'monthly_budget': 200.0},
+      {'id': 'cat_4', 'name': 'Transport', 'icon_code_point': 0xe530, 'monthly_budget': 150.0},
+      {'id': 'cat_5', 'name': 'Entertainment', 'icon_code_point': 0xe404, 'monthly_budget': 200.0},
+      {'id': 'cat_6', 'name': 'Other', 'icon_code_point': 0xe3e9, 'monthly_budget': null},
     ];
     for (final cat in categories) {
       await db.insert('categories', cat);
@@ -93,7 +94,9 @@ class StorageServiceMobile implements StorageService {
 
   @override
   Future<void> insertCategory(Category category) async {
-    await _database.insert('categories', category.toMap());
+    final c = category.toMap();
+    c['id'] = generateId();
+    await _database.insert('categories', c);
   }
 
   @override
@@ -103,17 +106,19 @@ class StorageServiceMobile implements StorageService {
   }
 
   @override
-  Future<void> deleteCategory(int id) async {
+  Future<void> deleteCategory(String id) async {
     await _database.delete('categories', where: 'id = ?', whereArgs: [id]);
   }
 
   @override
   Future<void> insertExpense(Expense expense) async {
-    await _database.insert('expenses', expense.toMap());
+    final e = expense.toMap();
+    e['id'] = generateId();
+    await _database.insert('expenses', e);
   }
 
   @override
-  Future<void> deleteExpense(int id) async {
+  Future<void> deleteExpense(String id) async {
     await _database.delete('expenses', where: 'id = ?', whereArgs: [id]);
   }
 
@@ -144,5 +149,3 @@ class StorageServiceMobile implements StorageService {
     await _seed(_database);
   }
 }
-
-StorageService createPlatformStorage() => StorageServiceMobile();

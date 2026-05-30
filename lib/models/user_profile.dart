@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class UserProfile {
-  final int? id;
+  final String? id;
   String name;
   int colorValue;
 
@@ -16,7 +16,7 @@ class UserProfile {
       };
 
   factory UserProfile.fromMap(Map<String, dynamic> map) => UserProfile(
-        id: map['id'] as int,
+        id: map['id'] as String?,
         name: map['name'] as String,
         colorValue: map['color_value'] as int,
       );

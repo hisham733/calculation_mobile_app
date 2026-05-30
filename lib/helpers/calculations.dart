@@ -57,8 +57,8 @@ class Calculations {
     );
   }
 
-  static Map<int, double> categorySpending(List<Expense> expenses) {
-    final map = <int, double>{};
+  static Map<String?, double> categorySpending(List<Expense> expenses) {
+    final map = <String?, double>{};
     for (final e in expenses) {
       map[e.categoryId] = (map[e.categoryId] ?? 0) + e.totalAmount;
     }

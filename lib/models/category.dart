@@ -1,5 +1,5 @@
 class Category {
-  final int? id;
+  final String? id;
   String name;
   int iconCodePoint;
   double? monthlyBudget;
@@ -19,7 +19,7 @@ class Category {
       };
 
   factory Category.fromMap(Map<String, dynamic> map) => Category(
-        id: map['id'] as int,
+        id: map['id'] as String?,
         name: map['name'] as String,
         iconCodePoint: map['icon_code_point'] as int,
         monthlyBudget: map['monthly_budget'] as double?,

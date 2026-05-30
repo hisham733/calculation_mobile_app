@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/user_profile.dart';
 import '../../models/category.dart';
 import '../../models/expense.dart';
+import '../../helpers/id_generator.dart';
 import '../storage_service.dart';
 
 class StorageServiceWeb implements StorageService {
@@ -22,24 +23,21 @@ class StorageServiceWeb implements StorageService {
   Future<void> _seed() async {
     final p = await _p;
     final users = [
-      {'id': 1, 'name': 'User A', 'color_value': 0xFF007AFF},
-      {'id': 2, 'name': 'User B', 'color_value': 0xFFFF9500},
+      {'id': 'user_a', 'name': 'User A', 'color_value': 0xFF007AFF},
+      {'id': 'user_b', 'name': 'User B', 'color_value': 0xFFFF9500},
     ];
     p.setString('users', jsonEncode(users));
-    p.setInt('user_seq', 2);
 
     final categories = [
-      {'id': 1, 'name': 'Groceries', 'icon_code_point': 0xe8cc, 'monthly_budget': 800.0},
-      {'id': 2, 'name': 'Dining', 'icon_code_point': 0xe56c, 'monthly_budget': 400.0},
-      {'id': 3, 'name': 'Utilities', 'icon_code_point': 0xe3b3, 'monthly_budget': 200.0},
-      {'id': 4, 'name': 'Transport', 'icon_code_point': 0xe530, 'monthly_budget': 150.0},
-      {'id': 5, 'name': 'Entertainment', 'icon_code_point': 0xe404, 'monthly_budget': 200.0},
-      {'id': 6, 'name': 'Other', 'icon_code_point': 0xe3e9, 'monthly_budget': null},
+      {'id': 'cat_1', 'name': 'Groceries', 'icon_code_point': 0xe8cc, 'monthly_budget': 800.0},
+      {'id': 'cat_2', 'name': 'Dining', 'icon_code_point': 0xe56c, 'monthly_budget': 400.0},
+      {'id': 'cat_3', 'name': 'Utilities', 'icon_code_point': 0xe3b3, 'monthly_budget': 200.0},
+      {'id': 'cat_4', 'name': 'Transport', 'icon_code_point': 0xe530, 'monthly_budget': 150.0},
+      {'id': 'cat_5', 'name': 'Entertainment', 'icon_code_point': 0xe404, 'monthly_budget': 200.0},
+      {'id': 'cat_6', 'name': 'Other', 'icon_code_point': 0xe3e9, 'monthly_budget': null},
     ];
     p.setString('categories', jsonEncode(categories));
-    p.setInt('cat_seq', 6);
     p.setString('expenses', jsonEncode([]));
-    p.setInt('exp_seq', 0);
   }
 
   List<Map<String, dynamic>> _list(String key) {
@@ -50,12 +48,6 @@ class StorageServiceWeb implements StorageService {
 
   void _save(String key, List<Map<String, dynamic>> data) {
     _prefs!.setString(key, jsonEncode(data));
-  }
-
-  int _nextId(String seqKey) {
-    final id = (_prefs!.getInt(seqKey) ?? 0) + 1;
-    _prefs!.setInt(seqKey, id);
-    return id;
   }
 
   @override
@@ -86,7 +78,7 @@ class StorageServiceWeb implements StorageService {
     await init();
     final list = _list('categories');
     final c = category.toMap();
-    c['id'] = _nextId('cat_seq');
+    c['id'] = generateId();
     list.add(c);
     _save('categories', list);
   }
@@ -103,7 +95,7 @@ class StorageServiceWeb implements StorageService {
   }
 
   @override
-  Future<void> deleteCategory(int id) async {
+  Future<void> deleteCategory(String id) async {
     await init();
     final list = _list('categories');
     list.removeWhere((m) => m['id'] == id);
@@ -115,13 +107,13 @@ class StorageServiceWeb implements StorageService {
     await init();
     final list = _list('expenses');
     final e = expense.toMap();
-    e['id'] = _nextId('exp_seq');
+    e['id'] = generateId();
     list.insert(0, e);
     _save('expenses', list);
   }
 
   @override
-  Future<void> deleteExpense(int id) async {
+  Future<void> deleteExpense(String id) async {
     await init();
     final list = _list('expenses');
     list.removeWhere((m) => m['id'] == id);
@@ -159,5 +151,3 @@ class StorageServiceWeb implements StorageService {
     await _seed();
   }
 }
-
-StorageService createPlatformStorage() => StorageServiceWeb();

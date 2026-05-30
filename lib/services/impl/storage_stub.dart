@@ -25,13 +25,13 @@ class StorageServiceStub implements StorageService {
   Future<void> updateCategory(Category category) => throw UnsupportedError('');
 
   @override
-  Future<void> deleteCategory(int id) => throw UnsupportedError('');
+  Future<void> deleteCategory(String id) => throw UnsupportedError('');
 
   @override
   Future<void> insertExpense(Expense expense) => throw UnsupportedError('');
 
   @override
-  Future<void> deleteExpense(int id) => throw UnsupportedError('');
+  Future<void> deleteExpense(String id) => throw UnsupportedError('');
 
   @override
   Future<List<Expense>> getExpensesForMonth(DateTime month) =>

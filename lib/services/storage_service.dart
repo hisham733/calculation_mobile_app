@@ -11,10 +11,10 @@ abstract class StorageService {
   Future<List<Category>> getCategories();
   Future<void> insertCategory(Category category);
   Future<void> updateCategory(Category category);
-  Future<void> deleteCategory(int id);
+  Future<void> deleteCategory(String id);
 
   Future<void> insertExpense(Expense expense);
-  Future<void> deleteExpense(int id);
+  Future<void> deleteExpense(String id);
   Future<List<Expense>> getExpensesForMonth(DateTime month);
   Future<List<Expense>> getAllExpenses();
 

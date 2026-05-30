@@ -16,7 +16,7 @@ class HistoryScreen extends StatefulWidget {
 class _HistoryScreenState extends State<HistoryScreen> {
   final _storage = createStorage();
   DateTime _selectedMonth = DateTime.now();
-  int? _selectedCategoryId;
+  String? _selectedCategoryId;
   List<Expense> _expenses = [];
   List<UserProfile> _users = [];
   List<Category> _categories = [];
@@ -127,7 +127,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  Widget _chip(String label, int? id) {
+  Widget _chip(String label, String? id) {
     final selected = _selectedCategoryId == id;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
