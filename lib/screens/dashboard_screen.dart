@@ -91,25 +91,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Dashboard'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add_circle_outline),
-            onPressed: () => _addExpense(context),
-          ),
-        ],
+      appBar: AppBar(title: const Text('Dashboard')),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _addExpense(context),
+        icon: const Icon(Icons.add),
+        label: const Text('Add Expense'),
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       body: RefreshIndicator(
         onRefresh: _load,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
           children: [
+            _settlementCard(summary),
+            const SizedBox(height: 12),
             _totalSpentCard(summary),
             const SizedBox(height: 12),
             _perUserRow(summary),
-            const SizedBox(height: 12),
-            _settlementCard(summary),
             const SizedBox(height: 16),
             TextField(
               controller: _searchCtrl,
@@ -324,62 +322,109 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _showExpenseDetail(BuildContext context, Expense expense) {
     final cat = _categories.where((c) => c.id == expense.categoryId).firstOrNull;
     final user = _users.where((u) => u.id == expense.paidById).firstOrNull;
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(IconData(cat?.iconCodePoint ?? 0xe3e9, fontFamily: 'MaterialIcons'), size: 24),
-            const SizedBox(width: 8),
-            Expanded(child: Text(expense.description)),
-          ],
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(ctx).viewInsets.bottom,
         ),
-        content: Column(
+        child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _detailRow('Amount', Calculations.currency(expense.totalAmount)),
-            _detailRow('Date', DateFormat('MMM d, yyyy').format(expense.date)),
-            _detailRow('Category', cat?.name ?? ''),
-            _detailRow('Paid by', user?.name ?? ''),
-            _detailRow('Split', expense.splitMode == SplitMode.percentage
-                ? '${expense.splitPercentageA?.toInt() ?? 50}% / ${expense.splitPercentageB?.toInt() ?? 50}%'
-                : '${Calculations.currency(expense.amountA ?? 0)} / ${Calculations.currency(expense.amountB ?? 0)}'),
-            if (expense.isRecurring)
-              _detailRow('Recurring', expense.recurringInterval == 'monthly' ? 'Monthly' : 'Weekly'),
-            if (expense.notes.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text('Notes', style: TextStyle(fontSize: 11, color: Colors.grey[600])),
-              Text(expense.notes),
-            ],
+            Container(
+              width: 40, height: 4,
+              margin: const EdgeInsets.only(top: 12, bottom: 8),
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+              child: Row(
+                children: [
+                  Icon(IconData(cat?.iconCodePoint ?? 0xe3e9, fontFamily: 'MaterialIcons'), size: 28),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(expense.description,
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                children: [
+                  _detailRow(Icons.attach_money, 'Amount', Calculations.currency(expense.totalAmount)),
+                  const SizedBox(height: 16),
+                  _detailRow(Icons.calendar_today, 'Date', DateFormat('MMM d, yyyy').format(expense.date)),
+                  const SizedBox(height: 16),
+                  _detailRow(Icons.category_outlined, 'Category', cat?.name ?? ''),
+                  const SizedBox(height: 16),
+                  _detailRow(Icons.person_outline, 'Paid by', user?.name ?? ''),
+                  const SizedBox(height: 16),
+                  _detailRow(Icons.compare_arrows, 'Split',
+                      expense.splitMode == SplitMode.percentage
+                          ? '${expense.splitPercentageA?.toInt() ?? 50}% / ${expense.splitPercentageB?.toInt() ?? 50}%'
+                          : '${Calculations.currency(expense.amountA ?? 0)} / ${Calculations.currency(expense.amountB ?? 0)}'),
+                  if (expense.isRecurring) ...[
+                    const SizedBox(height: 16),
+                    _detailRow(Icons.repeat, 'Recurring',
+                        expense.recurringInterval == 'monthly' ? 'Monthly' : 'Weekly'),
+                  ],
+                  if (expense.notes.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    _detailRow(Icons.notes, 'Notes', expense.notes),
+                  ],
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.close, size: 18),
+                      label: const Text('Close'),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton.icon(
+                      icon: const Icon(Icons.edit, size: 18),
+                      label: const Text('Edit'),
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        _editExpense(context, expense);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Close'),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _editExpense(context, expense);
-            },
-            child: const Text('Edit'),
-          ),
-        ],
       ),
     );
   }
 
-  Widget _detailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        children: [
-          Text('$label: ', style: TextStyle(fontSize: 13, color: Colors.grey[600])),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
-        ],
-      ),
+  Widget _detailRow(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: Colors.grey[600]),
+        const SizedBox(width: 12),
+        Text('$label: ', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+        Expanded(
+          child: Text(value,
+              style: const TextStyle(fontWeight: FontWeight.w500),
+              textAlign: TextAlign.end),
+        ),
+      ],
     );
   }
 

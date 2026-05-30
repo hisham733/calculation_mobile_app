@@ -12,6 +12,13 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
+const _iconChoices = [
+  0xe8cc, 0xe56c, 0xe3b3, 0xe530, 0xe404, 0xe3e9, 0xe54e, 0xe558,
+  0xe541, 0xe5c8, 0xe32a, 0xe87e, 0xe8b8, 0xe324, 0xe334, 0xe335,
+  0xe307, 0xe30a, 0xe31b, 0xe8d5, 0xe8d7, 0xe86c, 0xe85c, 0xe8a0,
+  0xe6de, 0xe8ba, 0xe8d0, 0xe355, 0xe555, 0xe549,
+];
+
 class _SettingsScreenState extends State<SettingsScreen> {
   final _storage = createStorage();
   List<UserProfile> _users = [];
@@ -192,41 +199,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _addCategory() {
     final nameCtrl = TextEditingController();
     final budgetCtrl = TextEditingController();
+    int selectedIcon = _iconChoices[0];
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Add Category'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameCtrl,
-              decoration: const InputDecoration(labelText: 'Name'),
-              autofocus: true,
-            ),
-            TextField(
-              controller: budgetCtrl,
-              decoration: const InputDecoration(labelText: 'Monthly Budget (optional)'),
-              keyboardType: TextInputType.numberWithOptions(decimal: true),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Add Category'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(labelText: 'Name'),
+                autofocus: true,
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: budgetCtrl,
+                decoration: const InputDecoration(labelText: 'Monthly Budget (optional)'),
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+              ),
+              const SizedBox(height: 16),
+              const Text('Icon', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+              const SizedBox(height: 8),
+              _iconGrid(selectedIcon, (icon) => setDialogState(() => selectedIcon = icon)),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            TextButton(
+              onPressed: () {
+                if (nameCtrl.text.isNotEmpty) {
+                  _storage.insertCategory(Category(
+                    name: nameCtrl.text,
+                    monthlyBudget: double.tryParse(budgetCtrl.text),
+                    iconCodePoint: selectedIcon,
+                  ));
+                  _load();
+                  Navigator.pop(ctx);
+                }
+              },
+              child: const Text('Add'),
             ),
           ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          TextButton(
-            onPressed: () {
-              if (nameCtrl.text.isNotEmpty) {
-                _storage.insertCategory(Category(
-                  name: nameCtrl.text,
-                  monthlyBudget: double.tryParse(budgetCtrl.text),
-                ));
-                _load();
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('Add'),
-          ),
-        ],
       ),
     );
   }
@@ -236,38 +252,80 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final budgetCtrl = TextEditingController(
       text: category.monthlyBudget?.toStringAsFixed(0) ?? '',
     );
+    int selectedIcon = category.iconCodePoint;
 
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Edit Category'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameCtrl,
-              decoration: const InputDecoration(labelText: 'Name'),
-            ),
-            TextField(
-              controller: budgetCtrl,
-              decoration: const InputDecoration(labelText: 'Monthly Budget'),
-              keyboardType: TextInputType.numberWithOptions(decimal: true),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Edit Category'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(labelText: 'Name'),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: budgetCtrl,
+                decoration: const InputDecoration(labelText: 'Monthly Budget'),
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+              ),
+              const SizedBox(height: 16),
+              const Text('Icon', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+              const SizedBox(height: 8),
+              _iconGrid(selectedIcon, (icon) => setDialogState(() => selectedIcon = icon)),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            TextButton(
+              onPressed: () {
+                category.name = nameCtrl.text;
+                category.monthlyBudget = double.tryParse(budgetCtrl.text);
+                category.iconCodePoint = selectedIcon;
+                _storage.updateCategory(category);
+                _load();
+                Navigator.pop(ctx);
+              },
+              child: const Text('Save'),
             ),
           ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          TextButton(
-            onPressed: () {
-              category.name = nameCtrl.text;
-              category.monthlyBudget = double.tryParse(budgetCtrl.text);
-              _storage.updateCategory(category);
-              _load();
-              Navigator.pop(context);
-            },
-            child: const Text('Save'),
-          ),
-        ],
+      ),
+    );
+  }
+
+  Widget _iconGrid(int selected, ValueChanged<int> onSelected) {
+    return SizedBox(
+      height: 160,
+      child: GridView.builder(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 6,
+          mainAxisSpacing: 4,
+          crossAxisSpacing: 4,
+        ),
+        itemCount: _iconChoices.length,
+        itemBuilder: (_, i) {
+          final icon = _iconChoices[i];
+          final isSelected = icon == selected;
+          return InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: () => onSelected(icon),
+            child: Container(
+              decoration: BoxDecoration(
+                color: isSelected ? Theme.of(context).colorScheme.primaryContainer : null,
+                borderRadius: BorderRadius.circular(8),
+                border: isSelected ? Border.all(color: Theme.of(context).colorScheme.primary, width: 2) : null,
+              ),
+              child: Icon(
+                IconData(icon, fontFamily: 'MaterialIcons'),
+                color: isSelected ? Theme.of(context).colorScheme.primary : Colors.grey[600],
+              ),
+            ),
+          );
+        },
       ),
     );
   }

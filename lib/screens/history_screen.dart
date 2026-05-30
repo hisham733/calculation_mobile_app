@@ -123,99 +123,103 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('History')),
-      body: Column(
-        children: [
-          _monthNav(monthText),
-          _filterBar(),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: TextField(
-              controller: _searchCtrl,
-              decoration: InputDecoration(
-                hintText: 'Search...',
-                prefixIcon: const Icon(Icons.search, size: 20),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear, size: 18),
-                        onPressed: () {
-                          _searchCtrl.clear();
-                          setState(() => _searchQuery = '');
-                        },
-                      )
-                    : null,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
-                isDense: true,
-              ),
-              onChanged: (v) => setState(() => _searchQuery = v),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Row(
-              children: [
-                Text('${_filtered.length} expense${_filtered.length == 1 ? '' : 's'}',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-                const Spacer(),
-                DropdownButton<SortMode>(
-                  value: _sortMode,
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _addExpense(context),
+        child: const Icon(Icons.add),
+      ),
+      body: RefreshIndicator(
+        onRefresh: _load,
+        child: ListView(
+          padding: const EdgeInsets.only(bottom: 80),
+          children: [
+            _monthNav(monthText),
+            _filterBar(),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: TextField(
+                controller: _searchCtrl,
+                decoration: InputDecoration(
+                  hintText: 'Search...',
+                  prefixIcon: const Icon(Icons.search, size: 20),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 18),
+                          onPressed: () {
+                            _searchCtrl.clear();
+                            setState(() => _searchQuery = '');
+                          },
+                        )
+                      : null,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
                   isDense: true,
-                  underline: const SizedBox(),
-                  icon: const Icon(Icons.sort, size: 18),
-                  items: const [
-                    DropdownMenuItem(value: SortMode.dateDesc, child: Text('Newest', style: TextStyle(fontSize: 13))),
-                    DropdownMenuItem(value: SortMode.dateAsc, child: Text('Oldest', style: TextStyle(fontSize: 13))),
-                    DropdownMenuItem(value: SortMode.amountDesc, child: Text('Amount ↓', style: TextStyle(fontSize: 13))),
-                    DropdownMenuItem(value: SortMode.amountAsc, child: Text('Amount ↑', style: TextStyle(fontSize: 13))),
-                    DropdownMenuItem(value: SortMode.category, child: Text('Category', style: TextStyle(fontSize: 13))),
-                  ],
-                  onChanged: (v) {
-                    if (v != null) setState(() => _sortMode = v);
-                  },
                 ),
-                const SizedBox(width: 8),
-              ],
+                onChanged: (v) => setState(() => _searchQuery = v),
+              ),
             ),
-          ),
-          Expanded(
-            child: _filtered.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.receipt_long_outlined, size: 48, color: Colors.grey[400]),
-                        const SizedBox(height: 12),
-                        Text(
-                          _searchQuery.isNotEmpty || _selectedCategoryId != null
-                              ? 'No matching expenses'
-                              : 'No expenses',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.grey[600]),
-                        ),
-                      ],
-                    ),
-                  )
-                : Column(
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Row(
+                children: [
+                  Text('${_filtered.length} expense${_filtered.length == 1 ? '' : 's'}',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                  const Spacer(),
+                  DropdownButton<SortMode>(
+                    value: _sortMode,
+                    isDense: true,
+                    underline: const SizedBox(),
+                    icon: const Icon(Icons.sort, size: 18),
+                    items: const [
+                      DropdownMenuItem(value: SortMode.dateDesc, child: Text('Newest', style: TextStyle(fontSize: 13))),
+                      DropdownMenuItem(value: SortMode.dateAsc, child: Text('Oldest', style: TextStyle(fontSize: 13))),
+                      DropdownMenuItem(value: SortMode.amountDesc, child: Text('Amount ↓', style: TextStyle(fontSize: 13))),
+                      DropdownMenuItem(value: SortMode.amountAsc, child: Text('Amount ↑', style: TextStyle(fontSize: 13))),
+                      DropdownMenuItem(value: SortMode.category, child: Text('Category', style: TextStyle(fontSize: 13))),
+                    ],
+                    onChanged: (v) {
+                      if (v != null) setState(() => _sortMode = v);
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                ],
+              ),
+            ),
+            if (_filtered.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 64),
+                child: Center(
+                  child: Column(
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                        child: Row(
-                          children: [
-                            const Spacer(),
-                            Text('Total: ${Calculations.currency(_total)}',
-                                style: const TextStyle(fontWeight: FontWeight.w600)),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        child: ListView.builder(
-                          itemCount: _filtered.length,
-                          itemBuilder: (_, i) => _expenseTile(context, _filtered[i]),
-                        ),
+                      Icon(Icons.receipt_long_outlined, size: 48, color: Colors.grey[400]),
+                      const SizedBox(height: 12),
+                      Text(
+                        _searchQuery.isNotEmpty || _selectedCategoryId != null
+                            ? 'No matching expenses'
+                            : 'No expenses',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.grey[600]),
                       ),
                     ],
                   ),
-          ),
-        ],
+                ),
+              )
+            else ...[
+              ..._filtered.map((e) => _expenseTile(context, e)),
+              const Divider(height: 1),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                child: Row(
+                  children: [
+                    const Text('Total', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+                    const Spacer(),
+                    Text(Calculations.currency(_total),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -320,6 +324,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
       context,
       MaterialPageRoute(builder: (_) => AddExpenseScreen(existingExpense: expense)),
     );
+    _load();
+  }
+
+  Future<void> _addExpense(BuildContext context) async {
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => const AddExpenseScreen()));
     _load();
   }
 }

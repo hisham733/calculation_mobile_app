@@ -59,7 +59,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Budget')),
-      body: total == 0 && _currentExpenses.isEmpty
+      body: _currentExpenses.isEmpty
           ? Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -74,13 +74,16 @@ class _BudgetScreenState extends State<BudgetScreen> {
                 ],
               ),
             )
-          : ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                if (total > 0) _pieChart(spending, total),
-                if (total > 0) const SizedBox(height: 24),
-                ..._categories.map((c) => _budgetTile(c, spending[c.id] ?? 0)),
-              ],
+          : RefreshIndicator(
+              onRefresh: _load,
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  if (total > 0) _pieChart(spending, total),
+                  if (total > 0) const SizedBox(height: 24),
+                  ..._categories.map((c) => _budgetTile(c, spending[c.id] ?? 0)),
+                ],
+              ),
             ),
     );
   }
