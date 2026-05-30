@@ -4,6 +4,7 @@ import '../models/expense.dart';
 import '../models/user_profile.dart';
 import '../models/category.dart';
 import '../services/storage_provider.dart';
+import '../helpers/calculations.dart';
 
 class AddExpenseScreen extends StatefulWidget {
   final Expense? existingExpense;
@@ -222,6 +223,17 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               _percentageA = 100 - v;
             });
           }),
+          const SizedBox(height: 8),
+          Center(
+            child: TextButton.icon(
+              icon: const Icon(Icons.balance, size: 16),
+              label: const Text('Reset to 50/50'),
+              onPressed: () => setState(() {
+                _percentageA = 50;
+                _percentageB = 50;
+              }),
+            ),
+          ),
         ],
       ],
     );
@@ -266,7 +278,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: Text(
-              'Total: \$${_calculateIndividualTotal().toStringAsFixed(2)}',
+              'Total: ${Calculations.currency(_calculateIndividualTotal())}',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
@@ -329,6 +341,14 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     } else {
       _storage.insertExpense(expense);
     }
-    Navigator.pop(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(_isEditing ? 'Expense updated' : 'Expense added'),
+        duration: const Duration(milliseconds: 800),
+      ),
+    );
+    Future.delayed(const Duration(milliseconds: 400), () {
+      if (context.mounted) Navigator.pop(context);
+    });
   }
 }

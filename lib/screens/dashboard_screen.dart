@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/expense.dart';
 import '../models/user_profile.dart';
 import '../models/category.dart';
@@ -20,6 +22,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<Expense> _expenses = [];
   bool _loading = true;
   DateTime? _settledAt;
+  final _searchCtrl = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -27,17 +31,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _load();
   }
 
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
   Future<void> _load() async {
     final users = await _storage.getUsers();
     final categories = await _storage.getCategories();
     final now = DateTime.now();
     final expenses = await _storage.getExpensesForMonth(now);
+    final prefs = await SharedPreferences.getInstance();
+    final monthKey = DateFormat('yyyy-MM').format(now);
+    final settledTs = prefs.getInt('settled_$monthKey');
     setState(() {
       _users = users;
       _categories = categories;
       _expenses = expenses;
+      _settledAt = settledTs != null ? DateTime.fromMillisecondsSinceEpoch(settledTs) : null;
       _loading = false;
     });
+  }
+
+  List<Expense> get _filtered {
+    if (_searchQuery.isEmpty) return _expenses;
+    final q = _searchQuery.toLowerCase();
+    return _expenses.where((e) =>
+      e.description.toLowerCase().contains(q) ||
+      e.notes.toLowerCase().contains(q)
+    ).toList();
   }
 
   @override
@@ -46,7 +69,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     if (_users.length < 2) {
-      return const Scaffold(body: Center(child: Text('Set up users in Settings')));
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.people_outline, size: 64, color: Colors.grey[400]),
+              const SizedBox(height: 16),
+              Text('Set up users in Settings',
+                  style: Theme.of(context).textTheme.titleMedium),
+            ],
+          ),
+        ),
+      );
     }
 
     final summary = Calculations.summary(
@@ -75,16 +110,59 @@ class _DashboardScreenState extends State<DashboardScreen> {
             _perUserRow(summary),
             const SizedBox(height: 12),
             _settlementCard(summary),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _searchCtrl,
+              decoration: InputDecoration(
+                hintText: 'Search expenses...',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchCtrl.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                      )
+                    : null,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                contentPadding: const EdgeInsets.symmetric(vertical: 0),
+              ),
+              onChanged: (v) => setState(() => _searchQuery = v),
+            ),
+            const SizedBox(height: 16),
             Text('Recent Expenses', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
-            if (_expenses.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(32),
-                child: Center(child: Text('No expenses this month')),
-              )
+            if (_filtered.isEmpty)
+              _emptyState()
             else
-              ..._expenses.take(5).map((e) => _expenseTile(context, e)),
+              ..._filtered.take(10).map((e) => _expenseTile(context, e)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _emptyState() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 48),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(Icons.receipt_long_outlined, size: 64, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(_searchQuery.isNotEmpty
+                ? 'No matching expenses'
+                : 'No expenses this month',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.grey[600])),
+            if (_searchQuery.isEmpty) ...[
+              const SizedBox(height: 12),
+              FilledButton.tonalIcon(
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Add your first expense'),
+                onPressed: () => _addExpense(context),
+              ),
+            ],
           ],
         ),
       ),
@@ -152,48 +230,52 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final settled = _settledAt != null;
     final balanced = summary.balanceA == 0;
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: settled || balanced
-            ? Colors.green.withValues(alpha: 0.15)
-            : Colors.orange.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                settled || balanced ? Icons.check_circle : Icons.swap_horiz,
-                color: settled || balanced ? Colors.green : Colors.orange,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  settled
-                      ? 'Settled'
-                      : summary.settlementText(_users[0].name, _users[1].name),
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                  textAlign: TextAlign.center,
+    return Card(
+      color: settled || balanced
+          ? Colors.green.withValues(alpha: 0.15)
+          : Colors.orange.withValues(alpha: 0.15),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  settled || balanced ? Icons.check_circle : Icons.swap_horiz,
+                  color: settled || balanced ? Colors.green : Colors.orange,
                 ),
-              ),
-            ],
-          ),
-          if (!settled && !balanced)
-            TextButton.icon(
-              icon: const Icon(Icons.check, size: 18),
-              label: const Text('Mark as Settled'),
-              onPressed: () {
-                setState(() => _settledAt = DateTime.now());
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Marked as settled')),
-                );
-              },
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    settled
+                        ? 'Settled'
+                        : summary.settlementText(_users[0].name, _users[1].name),
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
             ),
-        ],
+            if (!settled && !balanced)
+              TextButton.icon(
+                icon: const Icon(Icons.check, size: 18),
+                label: const Text('Mark as Settled'),
+                onPressed: () async {
+                  final now = DateTime.now();
+                  final prefs = await SharedPreferences.getInstance();
+                  final monthKey = DateFormat('yyyy-MM').format(now);
+                  await prefs.setInt('settled_$monthKey', now.millisecondsSinceEpoch);
+                  setState(() => _settledAt = now);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Marked as settled')),
+                    );
+                  }
+                },
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -212,27 +294,91 @@ class _DashboardScreenState extends State<DashboardScreen> {
       onDismissed: (_) async {
         await _storage.deleteExpense(expense.id!);
         _load();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${expense.description} deleted'),
-            action: SnackBarAction(label: 'Undo', onPressed: () async {
-              _storage.insertExpense(expense);
-              _load();
-            }),
-          ),
-        );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${expense.description} deleted'),
+              action: SnackBarAction(label: 'Undo', onPressed: () async {
+                _storage.insertExpense(expense);
+                _load();
+              }),
+            ),
+          );
+        }
       },
       child: ListTile(
-        onTap: () => _editExpense(context, expense),
+        onTap: () => _showExpenseDetail(context, expense),
         contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
         leading: Icon(IconData(cat?.iconCodePoint ?? 0xe3e9, fontFamily: 'MaterialIcons'), color: Colors.grey[600]),
         title: Text(expense.description, style: const TextStyle(fontWeight: FontWeight.w500)),
         subtitle: Text(
-          '${_userName(expense.paidById)} · ${expense.date.toString().split(' ')[0]}',
+          '${_userName(expense.paidById)} · ${DateFormat('MMM d').format(expense.date)}',
           style: TextStyle(fontSize: 12, color: Colors.grey[600]),
         ),
         trailing: Text(Calculations.currency(expense.totalAmount),
             style: const TextStyle(fontWeight: FontWeight.bold)),
+      ),
+    );
+  }
+
+  void _showExpenseDetail(BuildContext context, Expense expense) {
+    final cat = _categories.where((c) => c.id == expense.categoryId).firstOrNull;
+    final user = _users.where((u) => u.id == expense.paidById).firstOrNull;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(IconData(cat?.iconCodePoint ?? 0xe3e9, fontFamily: 'MaterialIcons'), size: 24),
+            const SizedBox(width: 8),
+            Expanded(child: Text(expense.description)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _detailRow('Amount', Calculations.currency(expense.totalAmount)),
+            _detailRow('Date', DateFormat('MMM d, yyyy').format(expense.date)),
+            _detailRow('Category', cat?.name ?? ''),
+            _detailRow('Paid by', user?.name ?? ''),
+            _detailRow('Split', expense.splitMode == SplitMode.percentage
+                ? '${expense.splitPercentageA?.toInt() ?? 50}% / ${expense.splitPercentageB?.toInt() ?? 50}%'
+                : '${Calculations.currency(expense.amountA ?? 0)} / ${Calculations.currency(expense.amountB ?? 0)}'),
+            if (expense.isRecurring)
+              _detailRow('Recurring', expense.recurringInterval == 'monthly' ? 'Monthly' : 'Weekly'),
+            if (expense.notes.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text('Notes', style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+              Text(expense.notes),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _editExpense(context, expense);
+            },
+            child: const Text('Edit'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _detailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          Text('$label: ', style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
+        ],
       ),
     );
   }

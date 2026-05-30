@@ -7,6 +7,8 @@ import '../services/storage_provider.dart';
 import '../helpers/calculations.dart';
 import 'add_expense_screen.dart';
 
+enum SortMode { dateDesc, dateAsc, amountDesc, amountAsc, category }
+
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
 
@@ -22,11 +24,20 @@ class _HistoryScreenState extends State<HistoryScreen> {
   List<UserProfile> _users = [];
   List<Category> _categories = [];
   bool _loading = true;
+  SortMode _sortMode = SortMode.dateDesc;
+  final _searchCtrl = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -56,6 +67,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       firstDate: DateTime(2023),
       lastDate: DateTime(2030),
       helpText: 'Select month',
+      initialDatePickerMode: DatePickerMode.year,
     );
     if (picked != null) {
       setState(() {
@@ -67,8 +79,34 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   List<Expense> get _filtered {
-    if (_selectedCategoryId == null) return _expenses;
-    return _expenses.where((e) => e.categoryId == _selectedCategoryId).toList();
+    var result = _expenses.where((e) {
+      if (_selectedCategoryId != null && e.categoryId != _selectedCategoryId) return false;
+      if (_searchQuery.isNotEmpty) {
+        final q = _searchQuery.toLowerCase();
+        if (!e.description.toLowerCase().contains(q) &&
+            !e.notes.toLowerCase().contains(q)) return false;
+      }
+      return true;
+    }).toList();
+
+    switch (_sortMode) {
+      case SortMode.dateDesc:
+        result.sort((a, b) => b.date.compareTo(a.date));
+        break;
+      case SortMode.dateAsc:
+        result.sort((a, b) => a.date.compareTo(b.date));
+        break;
+      case SortMode.amountDesc:
+        result.sort((a, b) => b.totalAmount.compareTo(a.totalAmount));
+        break;
+      case SortMode.amountAsc:
+        result.sort((a, b) => a.totalAmount.compareTo(b.totalAmount));
+        break;
+      case SortMode.category:
+        result.sort((a, b) => a.categoryId.compareTo(b.categoryId));
+        break;
+    }
+    return result;
   }
 
   double get _total => _filtered.fold(0.0, (s, e) => s + e.totalAmount);
@@ -87,13 +125,77 @@ class _HistoryScreenState extends State<HistoryScreen> {
         children: [
           _monthNav(monthText),
           _filterBar(),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: TextField(
+              controller: _searchCtrl,
+              decoration: InputDecoration(
+                hintText: 'Search...',
+                prefixIcon: const Icon(Icons.search, size: 20),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, size: 18),
+                        onPressed: () {
+                          _searchCtrl.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                      )
+                    : null,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                isDense: true,
+              ),
+              onChanged: (v) => setState(() => _searchQuery = v),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Row(
+              children: [
+                Text('${_filtered.length} expense${_filtered.length == 1 ? '' : 's'}',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                const Spacer(),
+                DropdownButton<SortMode>(
+                  value: _sortMode,
+                  isDense: true,
+                  underline: const SizedBox(),
+                  icon: const Icon(Icons.sort, size: 18),
+                  items: const [
+                    DropdownMenuItem(value: SortMode.dateDesc, child: Text('Newest', style: TextStyle(fontSize: 13))),
+                    DropdownMenuItem(value: SortMode.dateAsc, child: Text('Oldest', style: TextStyle(fontSize: 13))),
+                    DropdownMenuItem(value: SortMode.amountDesc, child: Text('Amount ↓', style: TextStyle(fontSize: 13))),
+                    DropdownMenuItem(value: SortMode.amountAsc, child: Text('Amount ↑', style: TextStyle(fontSize: 13))),
+                    DropdownMenuItem(value: SortMode.category, child: Text('Category', style: TextStyle(fontSize: 13))),
+                  ],
+                  onChanged: (v) {
+                    if (v != null) setState(() => _sortMode = v);
+                  },
+                ),
+                const SizedBox(width: 8),
+              ],
+            ),
+          ),
           Expanded(
             child: _filtered.isEmpty
-                ? const Center(child: Text('No expenses'))
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.receipt_long_outlined, size: 48, color: Colors.grey[400]),
+                        const SizedBox(height: 12),
+                        Text(
+                          _searchQuery.isNotEmpty || _selectedCategoryId != null
+                              ? 'No matching expenses'
+                              : 'No expenses',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.grey[600]),
+                        ),
+                      ],
+                    ),
+                  )
                 : Column(
                     children: [
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                         child: Row(
                           children: [
                             const Spacer(),
@@ -181,15 +283,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
       onDismissed: (_) async {
         await _storage.deleteExpense(expense.id!);
         _load();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${expense.description} deleted'),
-            action: SnackBarAction(label: 'Undo', onPressed: () async {
-              _storage.insertExpense(expense);
-              _load();
-            }),
-          ),
-        );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${expense.description} deleted'),
+              action: SnackBarAction(label: 'Undo', onPressed: () async {
+                _storage.insertExpense(expense);
+                _load();
+              }),
+            ),
+          );
+        }
       },
       child: ListTile(
         onTap: () => _editExpense(context, expense),
