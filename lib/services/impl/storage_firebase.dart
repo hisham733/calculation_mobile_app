@@ -23,16 +23,15 @@ class StorageServiceFirebase implements StorageService {
     batch.set(userBRef, {'name': 'User B', 'color_value': 0xFFFF9500});
 
     final categories = [
-      {'id': 'cat_1', 'name': 'Groceries', 'icon_code_point': 0xe8cc, 'monthly_budget': 800.0},
-      {'id': 'cat_2', 'name': 'Dining', 'icon_code_point': 0xe56c, 'monthly_budget': 400.0},
-      {'id': 'cat_3', 'name': 'Utilities', 'icon_code_point': 0xe3b3, 'monthly_budget': 200.0},
-      {'id': 'cat_4', 'name': 'Transport', 'icon_code_point': 0xe530, 'monthly_budget': 150.0},
-      {'id': 'cat_5', 'name': 'Entertainment', 'icon_code_point': 0xe404, 'monthly_budget': 200.0},
-      {'id': 'cat_6', 'name': 'Other', 'icon_code_point': 0xe3e9, 'monthly_budget': null},
+      {'name': 'Groceries', 'icon_code_point': 0xe8cc, 'monthly_budget': 800.0},
+      {'name': 'Dining', 'icon_code_point': 0xe56c, 'monthly_budget': 400.0},
+      {'name': 'Utilities', 'icon_code_point': 0xe3b3, 'monthly_budget': 200.0},
+      {'name': 'Transport', 'icon_code_point': 0xe530, 'monthly_budget': 150.0},
+      {'name': 'Entertainment', 'icon_code_point': 0xe404, 'monthly_budget': 200.0},
+      {'name': 'Other', 'icon_code_point': 0xe3e9, 'monthly_budget': null},
     ];
     for (final cat in categories) {
-      final ref = _firestore.collection('categories').doc(cat['id'] as String);
-      batch.set(ref, cat);
+      batch.set(_firestore.collection('categories').doc(), cat);
     }
     await batch.commit();
   }
@@ -96,8 +95,40 @@ class StorageServiceFirebase implements StorageService {
     await _firestore.collection('expenses').doc(id).delete();
   }
 
+  Future<void> _generateRecurring() async {
+    final now = DateTime.now();
+    final startOfMonth = DateTime(now.year, now.month, 1);
+    final recurring = await _firestore
+        .collection('expenses')
+        .where('is_recurring', isEqualTo: true)
+        .get();
+
+    for (final doc in recurring.docs) {
+      final data = doc.data();
+      final lastDate = (data['date'] as num?)?.toInt() ?? 0;
+      final last = DateTime.fromMillisecondsSinceEpoch(lastDate);
+      final interval = data['recurring_interval'] as String? ?? 'none';
+
+      bool shouldGenerate = false;
+      if (interval == 'monthly') {
+        shouldGenerate = last.year < now.year || (last.year == now.year && last.month < now.month);
+      } else if (interval == 'weekly') {
+        shouldGenerate = now.difference(last).inDays >= 7;
+      }
+
+      if (shouldGenerate) {
+        data.remove('id');
+        data['date'] = startOfMonth.millisecondsSinceEpoch;
+        final newRef = _firestore.collection('expenses').doc();
+        data['id'] = newRef.id;
+        await newRef.set(data);
+      }
+    }
+  }
+
   @override
   Future<List<Expense>> getExpensesForMonth(DateTime month) async {
+    await _generateRecurring();
     final start = DateTime(month.year, month.month, 1);
     final end = DateTime(month.year, month.month + 1, 0, 23, 59, 59);
 

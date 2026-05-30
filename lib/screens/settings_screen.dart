@@ -3,6 +3,7 @@ import '../models/user_profile.dart';
 import '../models/category.dart';
 import '../services/storage_provider.dart';
 import '../helpers/calculations.dart';
+import '../main.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -39,15 +40,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
+    final appState = SharedExpenseApp.of(context);
+
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
         children: [
           _usersSection(),
           _categoriesSection(),
+          _appearanceSection(appState),
           _actionsSection(),
         ],
       ),
+    );
+  }
+
+  Widget _appearanceSection(SharedExpenseAppState? appState) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionHeader('Appearance'),
+        ListTile(
+          leading: Icon(
+            appState?.themeMode == ThemeMode.dark ? Icons.dark_mode : Icons.light_mode,
+          ),
+          title: const Text('Dark Mode'),
+          trailing: Switch(
+            value: appState?.themeMode == ThemeMode.dark,
+            onChanged: (v) {
+              appState?.setThemeMode(v ? ThemeMode.dark : ThemeMode.light);
+            },
+          ),
+        ),
+        const Divider(),
+      ],
     );
   }
 

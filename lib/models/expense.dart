@@ -12,6 +12,8 @@ class Expense {
   final double? amountB;
   final String paidById;
   final String categoryId;
+  final bool isRecurring;
+  final String recurringInterval;
 
   Expense({
     this.id,
@@ -25,6 +27,8 @@ class Expense {
     this.amountB,
     required this.paidById,
     required this.categoryId,
+    this.isRecurring = false,
+    this.recurringInterval = 'none',
   });
 
   double get shareA {
@@ -59,6 +63,8 @@ class Expense {
         'amount_b': amountB,
         'paid_by_id': paidById,
         'category_id': categoryId,
+        'is_recurring': isRecurring,
+        'recurring_interval': recurringInterval,
       };
 
   factory Expense.fromMap(Map<String, dynamic> map) => Expense(
@@ -76,5 +82,7 @@ class Expense {
         amountB: (map['amount_b'] as num?)?.toDouble(),
         paidById: map['paid_by_id'] as String,
         categoryId: map['category_id'] as String,
+        isRecurring: map['is_recurring'] as bool? ?? false,
+        recurringInterval: map['recurring_interval'] as String? ?? 'none',
       );
 }

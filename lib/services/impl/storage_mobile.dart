@@ -15,6 +15,7 @@ class StorageServiceMobile implements StorageService {
   Future<void> init() async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, 'shared_expense.db');
+    await deleteDatabase(path);
     _db = await openDatabase(
       path,
       version: 1,
@@ -47,6 +48,8 @@ class StorageServiceMobile implements StorageService {
             amount_b REAL,
             paid_by_id TEXT NOT NULL,
             category_id TEXT NOT NULL,
+            is_recurring INTEGER NOT NULL DEFAULT 0,
+            recurring_interval TEXT NOT NULL DEFAULT 'none',
             FOREIGN KEY (paid_by_id) REFERENCES users(id),
             FOREIGN KEY (category_id) REFERENCES categories(id)
           )

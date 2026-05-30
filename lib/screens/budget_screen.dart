@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
 import '../models/expense.dart';
 import '../models/category.dart';
 import '../services/storage_provider.dart';
@@ -40,13 +41,86 @@ class _BudgetScreenState extends State<BudgetScreen> {
     }
 
     final spending = Calculations.categorySpending(_expenses);
+    final total = _expenses.fold(0.0, (s, e) => s + e.totalAmount);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Budget')),
-      body: ListView.builder(
+      body: ListView(
         padding: const EdgeInsets.all(16),
-        itemCount: _categories.length,
-        itemBuilder: (_, i) => _budgetTile(_categories[i], spending[_categories[i].id] ?? 0),
+        children: [
+          if (total > 0) _pieChart(spending, total),
+          if (total > 0) const SizedBox(height: 24),
+          ..._categories.map((c) => _budgetTile(c, spending[c.id] ?? 0)),
+        ],
+      ),
+    );
+  }
+
+  Widget _pieChart(Map<String?, double> spending, double total) {
+    final sections = _categories
+        .where((c) => (spending[c.id] ?? 0) > 0)
+        .map((c) {
+          final pct = (spending[c.id]! / total) * 100;
+          return PieChartSectionData(
+            value: spending[c.id]!,
+            title: '${pct.toInt()}%',
+            radius: 50,
+            titleStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
+          );
+        })
+        .toList();
+
+    if (sections.isEmpty) return const SizedBox.shrink();
+
+    final colors = [
+      Colors.indigo, Colors.orange, Colors.teal, Colors.pink,
+      Colors.amber, Colors.cyan, Colors.deepPurple, Colors.lime,
+    ];
+
+    for (int i = 0; i < sections.length; i++) {
+      sections[i] = sections[i].copyWith(color: colors[i % colors.length]);
+    }
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Text('Spending by Category',
+                style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 220,
+              child: PieChart(PieChartData(sections: sections)),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 12,
+              runSpacing: 6,
+              children: _categories
+                  .where((c) => (spending[c.id] ?? 0) > 0)
+                  .toList()
+                  .asMap()
+                  .entries
+                  .map((e) => Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 10, height: 10,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: colors[e.key % colors.length],
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Text('${e.value.name} (${Calculations.currency(spending[e.value.id]!)})',
+                              style: const TextStyle(fontSize: 12)),
+                        ],
+                      ))
+                  .toList(),
+            ),
+          ],
+        ),
       ),
     );
   }

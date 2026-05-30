@@ -27,6 +27,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   SplitMode _splitMode = SplitMode.percentage;
   double _percentageA = 50;
   double _percentageB = 50;
+  bool _isRecurring = false;
 
   List<UserProfile> _users = [];
   List<Category> _categories = [];
@@ -159,6 +160,13 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               _percentageFields()
             else
               _individualFields(),
+            const SizedBox(height: 16),
+            SwitchListTile(
+              title: const Text('Repeat monthly'),
+              subtitle: const Text('Auto-generate this expense each month'),
+              value: _isRecurring,
+              onChanged: (v) => setState(() => _isRecurring = v),
+            ),
           ],
         ),
       ),
@@ -281,6 +289,8 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       amountB: _splitMode == SplitMode.individual ? (double.tryParse(_individualBController.text) ?? 0) : null,
       paidById: _paidBy!.id!,
       categoryId: _selectedCategory!.id!,
+      isRecurring: _isRecurring,
+      recurringInterval: _isRecurring ? 'monthly' : 'none',
     );
 
     _storage.insertExpense(expense);
