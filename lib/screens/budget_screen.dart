@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/expense.dart';
 import '../models/category.dart';
-import '../services/database_service.dart';
+import '../services/storage_provider.dart';
 import '../helpers/calculations.dart';
 
 class BudgetScreen extends StatefulWidget {
@@ -12,7 +12,7 @@ class BudgetScreen extends StatefulWidget {
 }
 
 class _BudgetScreenState extends State<BudgetScreen> {
-  final _db = DatabaseService();
+  final _storage = createStorage();
   List<Category> _categories = [];
   List<Expense> _expenses = [];
   bool _loading = true;
@@ -24,8 +24,8 @@ class _BudgetScreenState extends State<BudgetScreen> {
   }
 
   Future<void> _load() async {
-    final categories = await _db.getCategories();
-    final expenses = await _db.getExpensesForMonth(DateTime.now());
+    final categories = await _storage.getCategories();
+    final expenses = await _storage.getExpensesForMonth(DateTime.now());
     setState(() {
       _categories = categories;
       _expenses = expenses;

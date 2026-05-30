@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import '../models/expense.dart';
 import '../models/user_profile.dart';
 import '../models/category.dart';
-import '../services/database_service.dart';
+import '../services/storage_provider.dart';
 
 class AddExpenseScreen extends StatefulWidget {
   const AddExpenseScreen({super.key});
@@ -13,7 +13,7 @@ class AddExpenseScreen extends StatefulWidget {
 }
 
 class _AddExpenseScreenState extends State<AddExpenseScreen> {
-  final _db = DatabaseService();
+  final _storage = createStorage();
   final _formKey = GlobalKey<FormState>();
 
   final _descController = TextEditingController();
@@ -39,8 +39,8 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   }
 
   Future<void> _load() async {
-    final users = await _db.getUsers();
-    final categories = await _db.getCategories();
+    final users = await _storage.getUsers();
+    final categories = await _storage.getCategories();
     setState(() {
       _users = users;
       _categories = categories;
@@ -106,7 +106,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<Category>(
-              initialValue: _selectedCategory,
               decoration: const InputDecoration(labelText: 'Category'),
               items: _categories
                   .map((c) => DropdownMenuItem(
@@ -125,7 +124,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<UserProfile>(
-              initialValue: _paidBy,
               decoration: const InputDecoration(labelText: 'Paid By'),
               items: _users
                   .map((u) => DropdownMenuItem(
@@ -178,8 +176,10 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
             });
           }),
           const SizedBox(height: 12),
-          _percentageSlider(_users.length > 1 ? _users[1].name : 'User B',
-              _users.length > 1 ? _users[1].color : Colors.orange, _percentageB, (v) {
+          _percentageSlider(
+              _users.length > 1 ? _users[1].name : 'User B',
+              _users.length > 1 ? _users[1].color : Colors.orange,
+              _percentageB, (v) {
             setState(() {
               _percentageB = v;
               _percentageA = 100 - v;
@@ -283,7 +283,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       categoryId: _selectedCategory!.id!,
     );
 
-    _db.insertExpense(expense);
+    _storage.insertExpense(expense);
     Navigator.pop(context);
   }
 }

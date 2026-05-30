@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/user_profile.dart';
 import '../models/category.dart';
-import '../services/database_service.dart';
+import '../services/storage_provider.dart';
 import '../helpers/calculations.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -12,7 +12,7 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  final _db = DatabaseService();
+  final _storage = createStorage();
   List<UserProfile> _users = [];
   List<Category> _categories = [];
   bool _loading = true;
@@ -24,8 +24,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _load() async {
-    final users = await _db.getUsers();
-    final categories = await _db.getCategories();
+    final users = await _storage.getUsers();
+    final categories = await _storage.getCategories();
     setState(() {
       _users = users;
       _categories = categories;
@@ -66,7 +66,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 decoration: const InputDecoration(border: InputBorder.none),
                 onSubmitted: (v) {
                   u.name = v;
-                  _db.updateUser(u);
+                  _storage.updateUser(u);
                 },
               ),
             )),
@@ -111,7 +111,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
               TextButton(
                 onPressed: () {
-                  _db.deleteCategory(category.id!);
+                  _storage.deleteCategory(category.id!);
                   _load();
                   Navigator.pop(context);
                 },
@@ -141,7 +141,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
                   TextButton(
                     onPressed: () {
-                      _db.resetAll();
+                      _storage.resetAll();
                       _load();
                       Navigator.pop(context);
                     },
@@ -190,7 +190,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           TextButton(
             onPressed: () {
               if (nameCtrl.text.isNotEmpty) {
-                _db.insertCategory(Category(
+                _storage.insertCategory(Category(
                   name: nameCtrl.text,
                   monthlyBudget: double.tryParse(budgetCtrl.text),
                 ));
@@ -235,7 +235,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onPressed: () {
               category.name = nameCtrl.text;
               category.monthlyBudget = double.tryParse(budgetCtrl.text);
-              _db.updateCategory(category);
+              _storage.updateCategory(category);
               _load();
               Navigator.pop(context);
             },

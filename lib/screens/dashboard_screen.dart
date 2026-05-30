@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/expense.dart';
 import '../models/user_profile.dart';
-import '../services/database_service.dart';
+import '../services/storage_provider.dart';
 import '../helpers/calculations.dart';
 import 'add_expense_screen.dart';
 
@@ -13,7 +13,7 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  final _db = DatabaseService();
+  final _storage = createStorage();
   List<UserProfile> _users = [];
   List<Expense> _expenses = [];
   bool _loading = true;
@@ -25,9 +25,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _load() async {
-    final users = await _db.getUsers();
+    final users = await _storage.getUsers();
     final now = DateTime.now();
-    final expenses = await _db.getExpensesForMonth(now);
+    final expenses = await _storage.getExpensesForMonth(now);
     setState(() {
       _users = users;
       _expenses = expenses;
@@ -38,10 +38,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     if (_users.length < 2) {
-      return const Center(child: Text('Set up users in Settings'));
+      return const Scaffold(body: Center(child: Text('Set up users in Settings')));
     }
 
     final summary = Calculations.summary(

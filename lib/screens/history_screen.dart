@@ -3,7 +3,7 @@ import 'package:intl/intl.dart';
 import '../models/expense.dart';
 import '../models/user_profile.dart';
 import '../models/category.dart';
-import '../services/database_service.dart';
+import '../services/storage_provider.dart';
 import '../helpers/calculations.dart';
 
 class HistoryScreen extends StatefulWidget {
@@ -14,7 +14,7 @@ class HistoryScreen extends StatefulWidget {
 }
 
 class _HistoryScreenState extends State<HistoryScreen> {
-  final _db = DatabaseService();
+  final _storage = createStorage();
   DateTime _selectedMonth = DateTime.now();
   int? _selectedCategoryId;
   List<Expense> _expenses = [];
@@ -29,9 +29,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Future<void> _load() async {
-    final users = await _db.getUsers();
-    final categories = await _db.getCategories();
-    final expenses = await _db.getExpensesForMonth(_selectedMonth);
+    final users = await _storage.getUsers();
+    final categories = await _storage.getCategories();
+    final expenses = await _storage.getExpensesForMonth(_selectedMonth);
     setState(() {
       _users = users;
       _categories = categories;
