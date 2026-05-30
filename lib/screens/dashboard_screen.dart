@@ -8,6 +8,7 @@ import '../services/storage_provider.dart';
 import '../helpers/calculations.dart';
 import 'add_expense_screen.dart';
 
+/// Main dashboard screen showing current month's expense summary.
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -21,7 +22,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<Category> _categories = [];
   List<Expense> _expenses = [];
   bool _loading = true;
-  DateTime? _settledAt;
+  DateTime? _settledAt; // Timestamp when user marked the month as settled
   final _searchCtrl = TextEditingController();
   String _searchQuery = '';
 
@@ -37,6 +38,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.dispose();
   }
 
+  /// Loads users, categories, expenses for the current month, and settlement state.
   Future<void> _load() async {
     final users = await _storage.getUsers();
     final categories = await _storage.getCategories();
@@ -54,6 +56,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
+  /// Filters expenses by search query (matches description and notes).
   List<Expense> get _filtered {
     if (_searchQuery.isEmpty) return _expenses;
     final q = _searchQuery.toLowerCase();
@@ -92,6 +95,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Dashboard')),
+      // FAB for quick access — always visible at bottom center
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _addExpense(context),
         icon: const Icon(Icons.add),
@@ -109,6 +113,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const SizedBox(height: 12),
             _perUserRow(summary),
             const SizedBox(height: 16),
+            // Search bar filtering expenses by description/notes
             TextField(
               controller: _searchCtrl,
               decoration: InputDecoration(
@@ -167,6 +172,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  /// Card showing total spent across all users this month.
   Widget _totalSpentCard(MonthlySummary summary) {
     return Card(
       child: Padding(
@@ -184,6 +190,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  /// Side-by-side cards showing each user's paid amount vs their share.
   Widget _perUserRow(MonthlySummary summary) {
     return Row(
       children: [
@@ -224,6 +231,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  /// Settlement card showing who owes whom, with a "Mark as Settled" button.
+  /// State is persisted via SharedPreferences per month.
   Widget _settlementCard(MonthlySummary summary) {
     final settled = _settledAt != null;
     final balanced = summary.balanceA == 0;
@@ -278,6 +287,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  /// Expense row with swipe-to-delete and tap for detail bottom sheet.
   Widget _expenseTile(BuildContext context, Expense expense) {
     final cat = _categories.where((c) => c.id == expense.categoryId).firstOrNull;
     return Dismissible(
@@ -319,6 +329,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  /// Shows expense details in a modal bottom sheet with edit action.
   void _showExpenseDetail(BuildContext context, Expense expense) {
     final cat = _categories.where((c) => c.id == expense.categoryId).firstOrNull;
     final user = _users.where((u) => u.id == expense.paidById).firstOrNull;
@@ -331,6 +342,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Drag handle
             Container(
               width: 40, height: 4,
               margin: const EdgeInsets.only(top: 12, bottom: 8),
@@ -413,6 +425,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  /// Renders a single info row in the detail bottom sheet.
   Widget _detailRow(IconData icon, String label, String value) {
     return Row(
       children: [

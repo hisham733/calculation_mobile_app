@@ -2,6 +2,7 @@ import 'package:intl/intl.dart';
 import '../models/expense.dart';
 import '../models/user_profile.dart';
 
+/// Summary of a month's expenses: totals, per-user paid vs share, and balances.
 class MonthlySummary {
   final double totalSpent;
   final double userAPaid;
@@ -20,6 +21,7 @@ class MonthlySummary {
   double get balanceA => userAPaid - userAShare;
   double get balanceB => userBPaid - userBShare;
 
+  /// Returns a human-readable string describing the settlement needed.
   String settlementText(String nameA, String nameB) {
     if (balanceA > balanceB.abs()) {
       return '$nameB owes $nameA: ${Calculations.currency(balanceA)}';
@@ -30,7 +32,9 @@ class MonthlySummary {
   }
 }
 
+/// Utility class with static methods for expense calculations and formatting.
 class Calculations {
+  /// Computes monthly summary from list of expenses and two users.
   static MonthlySummary summary({
     required List<Expense> expenses,
     required UserProfile userA,
@@ -57,6 +61,7 @@ class Calculations {
     );
   }
 
+  /// Groups total spending by category ID.
   static Map<String?, double> categorySpending(List<Expense> expenses) {
     final map = <String?, double>{};
     for (final e in expenses) {
@@ -65,6 +70,7 @@ class Calculations {
     return map;
   }
 
+  /// Formats a number as currency string (e.g. "$12.34").
   static String currency(double value) {
     return NumberFormat.currency(symbol: '\$', decimalDigits: 2).format(value);
   }

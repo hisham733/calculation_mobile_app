@@ -1,5 +1,6 @@
 enum SplitMode { percentage, individual }
 
+/// Represents a single shared expense with split details.
 class Expense {
   String? id;
   String description;
@@ -33,6 +34,7 @@ class Expense {
     this.notes = '',
   });
 
+  /// How much user A should pay based on split mode.
   double get shareA {
     switch (splitMode) {
       case SplitMode.percentage:
@@ -43,6 +45,7 @@ class Expense {
     }
   }
 
+  /// How much user B should pay based on split mode.
   double get shareB {
     switch (splitMode) {
       case SplitMode.percentage:

@@ -5,6 +5,7 @@ import '../services/storage_provider.dart';
 import '../helpers/calculations.dart';
 import '../main.dart';
 
+/// Settings screen for managing users, categories, appearance, and data.
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -196,6 +197,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  /// Opens a dialog to add a new category with name, budget, and icon picker.
   void _addCategory() {
     final nameCtrl = TextEditingController();
     final budgetCtrl = TextEditingController();
@@ -247,6 +249,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  /// Opens a dialog to edit an existing category's name, budget, and icon.
   void _editCategory(Category category) {
     final nameCtrl = TextEditingController(text: category.name);
     final budgetCtrl = TextEditingController(
@@ -297,6 +300,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  /// Grid of selectable Material Icons for category icon picker.
   Widget _iconGrid(int selected, ValueChanged<int> onSelected) {
     return SizedBox(
       height: 160,

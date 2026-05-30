@@ -7,8 +7,10 @@ import '../services/storage_provider.dart';
 import '../helpers/calculations.dart';
 import 'add_expense_screen.dart';
 
+/// Sort options for the expense history list.
 enum SortMode { dateDesc, dateAsc, amountDesc, amountAsc, category }
 
+/// History screen showing past months' expenses with search, filter, and sort.
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
 
@@ -78,6 +80,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }
   }
 
+  /// Filters expenses by category chip and search query, then sorts by selected mode.
   List<Expense> get _filtered {
     var result = _expenses.where((e) {
       if (_selectedCategoryId != null && e.categoryId != _selectedCategoryId) return false;
@@ -205,6 +208,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             else ...[
               ..._filtered.map((e) => _expenseTile(context, e)),
               const Divider(height: 1),
+              // Total row at bottom of expense list
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 child: Row(
@@ -224,6 +228,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
+  /// Month navigation bar with left/right arrows and tappable month name.
   Widget _monthNav(String monthText) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -242,6 +247,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
+  /// Horizontal scrollable category filter chips.
   Widget _filterBar() {
     return Container(
       height: 48,

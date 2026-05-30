@@ -6,8 +6,9 @@ import '../models/category.dart';
 import '../services/storage_provider.dart';
 import '../helpers/calculations.dart';
 
+/// Form screen for adding or editing an expense.
 class AddExpenseScreen extends StatefulWidget {
-  final Expense? existingExpense;
+  final Expense? existingExpense; // null = adding new, non-null = editing
 
   const AddExpenseScreen({super.key, this.existingExpense});
 
@@ -203,6 +204,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     );
   }
 
+  /// Percentage split sliders with 50/50 reset button.
   Widget _percentageFields() {
     return Column(
       children: [
@@ -255,6 +257,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     );
   }
 
+  /// Individual amount input fields for each user.
   Widget _individualFields() {
     return Column(
       children: [
@@ -302,6 +305,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     if (picked != null) setState(() => _date = picked);
   }
 
+  /// Validates form, builds expense object, persists it, then navigates back.
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedCategory == null || _paidBy == null) return;

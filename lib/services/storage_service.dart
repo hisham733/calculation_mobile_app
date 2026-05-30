@@ -2,6 +2,8 @@ import '../models/user_profile.dart';
 import '../models/category.dart';
 import '../models/expense.dart';
 
+/// Abstract interface for persistent storage.
+/// Implementations: Firebase Firestore (web), SQLite (mobile), SharedPreferences (legacy web).
 abstract class StorageService {
   Future<void> init();
 

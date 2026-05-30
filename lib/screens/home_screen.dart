@@ -4,6 +4,7 @@ import 'history_screen.dart';
 import 'budget_screen.dart';
 import 'settings_screen.dart';
 
+/// Root screen with bottom navigation and IndexedStack to preserve tab state.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -14,6 +15,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
 
+  // IndexedStack keeps all screens alive so state is preserved on tab switch
   final _screens = const [
     DashboardScreen(),
     HistoryScreen(),

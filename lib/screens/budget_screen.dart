@@ -5,6 +5,7 @@ import '../models/category.dart';
 import '../services/storage_provider.dart';
 import '../helpers/calculations.dart';
 
+/// Budget screen showing spending by category with pie chart and progress bars.
 class BudgetScreen extends StatefulWidget {
   const BudgetScreen({super.key});
 
@@ -39,6 +40,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
     });
   }
 
+  /// Computes unused budget from last month that rolls over to current month.
   double _rollover(Category cat) {
     final budget = cat.monthlyBudget ?? 0;
     if (budget <= 0) return 0;
@@ -88,6 +90,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
     );
   }
 
+  /// Pie chart showing spending distribution across categories with active expenses.
   Widget _pieChart(Map<String?, double> spending, double total) {
     final colors = [
       Colors.indigo, Colors.orange, Colors.teal, Colors.pink,
@@ -138,6 +141,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
     );
   }
 
+  /// Budget progress bar with rollover, color-coded by usage level.
   Widget _budgetTile(Category category, double spent) {
     final budget = category.monthlyBudget ?? 0;
     final hasBudget = budget > 0;

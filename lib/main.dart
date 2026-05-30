@@ -6,6 +6,7 @@ import 'screens/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Initialize Firebase silently — fails gracefully on platforms without Firebase support
   try {
     await Firebase.initializeApp(
       options: const FirebaseOptions(
@@ -26,6 +27,7 @@ void main() async {
   runApp(SharedExpenseApp(storage: storage, initialTheme: themeMode));
 }
 
+/// Root app widget with Material theming and dark mode support.
 class SharedExpenseApp extends StatefulWidget {
   final dynamic storage;
   final ThemeMode initialTheme;
@@ -51,6 +53,7 @@ class SharedExpenseAppState extends State<SharedExpenseApp> {
     _themeMode = widget.initialTheme;
   }
 
+  /// Persists theme mode and notifies the widget tree.
   void setThemeMode(ThemeMode mode) {
     setState(() => _themeMode = mode);
     SharedPreferences.getInstance().then((p) => p.setInt('theme_mode', mode.index));
