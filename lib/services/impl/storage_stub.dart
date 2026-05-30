@@ -31,6 +31,9 @@ class StorageServiceStub implements StorageService {
   Future<void> insertExpense(Expense expense) => throw UnsupportedError('');
 
   @override
+  Future<void> updateExpense(Expense expense) => throw UnsupportedError('');
+
+  @override
   Future<void> deleteExpense(String id) => throw UnsupportedError('');
 
   @override

@@ -113,6 +113,17 @@ class StorageServiceWeb implements StorageService {
   }
 
   @override
+  Future<void> updateExpense(Expense expense) async {
+    await init();
+    final list = _list('expenses');
+    final idx = list.indexWhere((m) => m['id'] == expense.id);
+    if (idx != -1) {
+      list[idx] = expense.toMap();
+      _save('expenses', list);
+    }
+  }
+
+  @override
   Future<void> deleteExpense(String id) async {
     await init();
     final list = _list('expenses');

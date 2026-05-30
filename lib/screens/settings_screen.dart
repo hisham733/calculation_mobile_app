@@ -119,7 +119,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _categoryTile(Category category) {
     return ListTile(
-      leading: Icon(Icons.add, color: Theme.of(context).colorScheme.primary),
+      leading: Icon(IconData(category.iconCodePoint, fontFamily: 'MaterialIcons'), color: Theme.of(context).colorScheme.primary),
       title: Text(category.name),
       subtitle: category.monthlyBudget != null && category.monthlyBudget! > 0
           ? Text('Budget: ${Calculations.currency(category.monthlyBudget!)}')

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/expense.dart';
 import '../models/user_profile.dart';
+import '../models/category.dart';
 import '../services/storage_provider.dart';
 import '../helpers/calculations.dart';
 import 'add_expense_screen.dart';
@@ -15,8 +16,10 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   final _storage = createStorage();
   List<UserProfile> _users = [];
+  List<Category> _categories = [];
   List<Expense> _expenses = [];
   bool _loading = true;
+  DateTime? _settledAt;
 
   @override
   void initState() {
@@ -26,10 +29,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _load() async {
     final users = await _storage.getUsers();
+    final categories = await _storage.getCategories();
     final now = DateTime.now();
     final expenses = await _storage.getExpensesForMonth(now);
     setState(() {
       _users = users;
+      _categories = categories;
       _expenses = expenses;
       _loading = false;
     });
@@ -79,7 +84,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Center(child: Text('No expenses this month')),
               )
             else
-              ..._expenses.take(5).map((e) => _expenseTile(e)),
+              ..._expenses.take(5).map((e) => _expenseTile(context, e)),
           ],
         ),
       ),
@@ -144,39 +149,91 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _settlementCard(MonthlySummary summary) {
-    final settled = summary.balanceA == 0;
+    final settled = _settledAt != null;
+    final balanced = summary.balanceA == 0;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: settled ? Colors.green.withValues(alpha: 0.15) : Colors.orange.withValues(alpha: 0.15),
+        color: settled || balanced
+            ? Colors.green.withValues(alpha: 0.15)
+            : Colors.orange.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Column(
         children: [
-          Icon(Icons.swap_horiz, color: settled ? Colors.green : Colors.orange),
-          const SizedBox(width: 8),
-          Text(
-            summary.settlementText(_users[0].name, _users[1].name),
-            style: const TextStyle(fontWeight: FontWeight.w600),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                settled || balanced ? Icons.check_circle : Icons.swap_horiz,
+                color: settled || balanced ? Colors.green : Colors.orange,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  settled
+                      ? 'Settled'
+                      : summary.settlementText(_users[0].name, _users[1].name),
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
           ),
+          if (!settled && !balanced)
+            TextButton.icon(
+              icon: const Icon(Icons.check, size: 18),
+              label: const Text('Mark as Settled'),
+              onPressed: () {
+                setState(() => _settledAt = DateTime.now());
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Marked as settled')),
+                );
+              },
+            ),
         ],
       ),
     );
   }
 
-  Widget _expenseTile(Expense expense) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-      leading: Icon(Icons.category, color: Colors.grey[600]),
-      title: Text(expense.description, style: const TextStyle(fontWeight: FontWeight.w500)),
-      subtitle: Text(
-        '${_userName(expense.paidById)} · ${expense.date.toString().split(' ')[0]}',
-        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+  Widget _expenseTile(BuildContext context, Expense expense) {
+    final cat = _categories.where((c) => c.id == expense.categoryId).firstOrNull;
+    return Dismissible(
+      key: ValueKey(expense.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 16),
+        color: Colors.red,
+        child: const Icon(Icons.delete, color: Colors.white),
       ),
-      trailing: Text(Calculations.currency(expense.totalAmount),
-          style: const TextStyle(fontWeight: FontWeight.bold)),
+      onDismissed: (_) async {
+        await _storage.deleteExpense(expense.id!);
+        _load();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${expense.description} deleted'),
+            action: SnackBarAction(label: 'Undo', onPressed: () async {
+              _storage.insertExpense(expense);
+              _load();
+            }),
+          ),
+        );
+      },
+      child: ListTile(
+        onTap: () => _editExpense(context, expense),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        leading: Icon(IconData(cat?.iconCodePoint ?? 0xe3e9, fontFamily: 'MaterialIcons'), color: Colors.grey[600]),
+        title: Text(expense.description, style: const TextStyle(fontWeight: FontWeight.w500)),
+        subtitle: Text(
+          '${_userName(expense.paidById)} · ${expense.date.toString().split(' ')[0]}',
+          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+        ),
+        trailing: Text(Calculations.currency(expense.totalAmount),
+            style: const TextStyle(fontWeight: FontWeight.bold)),
+      ),
     );
   }
 
@@ -186,6 +243,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _addExpense(BuildContext context) async {
     await Navigator.push(context, MaterialPageRoute(builder: (_) => const AddExpenseScreen()));
+    _load();
+  }
+
+  Future<void> _editExpense(BuildContext context, Expense expense) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => AddExpenseScreen(existingExpense: expense)),
+    );
     _load();
   }
 }

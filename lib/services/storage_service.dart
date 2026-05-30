@@ -14,6 +14,7 @@ abstract class StorageService {
   Future<void> deleteCategory(String id);
 
   Future<void> insertExpense(Expense expense);
+  Future<void> updateExpense(Expense expense);
   Future<void> deleteExpense(String id);
   Future<List<Expense>> getExpensesForMonth(DateTime month);
   Future<List<Expense>> getAllExpenses();

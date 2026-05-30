@@ -15,10 +15,9 @@ class StorageServiceMobile implements StorageService {
   Future<void> init() async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, 'shared_expense.db');
-    await deleteDatabase(path);
     _db = await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE users (
@@ -50,11 +49,17 @@ class StorageServiceMobile implements StorageService {
             category_id TEXT NOT NULL,
             is_recurring INTEGER NOT NULL DEFAULT 0,
             recurring_interval TEXT NOT NULL DEFAULT 'none',
+            notes TEXT NOT NULL DEFAULT '',
             FOREIGN KEY (paid_by_id) REFERENCES users(id),
             FOREIGN KEY (category_id) REFERENCES categories(id)
           )
         ''');
         await _seed(db);
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute("ALTER TABLE expenses ADD COLUMN notes TEXT NOT NULL DEFAULT ''");
+        }
       },
     );
   }
@@ -121,6 +126,15 @@ class StorageServiceMobile implements StorageService {
   }
 
   @override
+  Future<void> updateExpense(Expense expense) async {
+    final e = expense.toMap();
+    e.remove('id');
+    final now = expense.date;
+    e['date'] = now.millisecondsSinceEpoch;
+    await _database.update('expenses', e, where: 'id = ?', whereArgs: [expense.id]);
+  }
+
+  @override
   Future<void> deleteExpense(String id) async {
     await _database.delete('expenses', where: 'id = ?', whereArgs: [id]);
   }
@@ -152,3 +166,5 @@ class StorageServiceMobile implements StorageService {
     await _seed(_database);
   }
 }
+
+StorageService createPlatformStorage() => StorageServiceMobile();

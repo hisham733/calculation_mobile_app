@@ -13,6 +13,28 @@ class StorageServiceFirebase implements StorageService {
   Future<void> init() async {
     final users = await _firestore.collection('users').get();
     if (users.docs.isEmpty) await _seed();
+    await _generateRecurringIfNeeded();
+  }
+
+  Future<void> _generateRecurringIfNeeded() async {
+    final now = DateTime.now();
+    final currentMonth = DateTime(now.year, now.month, 1);
+
+    final metaDoc = await _firestore.collection('_meta').doc('recurring_generation').get();
+    if (metaDoc.exists) {
+      final lastGenerated = DateTime.fromMillisecondsSinceEpoch(
+        metaDoc.data()!['last_generated_at'] as int,
+      );
+      if (lastGenerated.year == now.year && lastGenerated.month == now.month) {
+        return;
+      }
+    }
+
+    await _generateRecurring();
+
+    await _firestore.collection('_meta').doc('recurring_generation').set({
+      'last_generated_at': currentMonth.millisecondsSinceEpoch,
+    });
   }
 
   Future<void> _seed() async {
@@ -95,6 +117,14 @@ class StorageServiceFirebase implements StorageService {
     await _firestore.collection('expenses').doc(id).delete();
   }
 
+  @override
+  Future<void> updateExpense(Expense expense) async {
+    final data = expense.toMap();
+    data.remove('id');
+    data['date'] = expense.date.millisecondsSinceEpoch;
+    await _firestore.collection('expenses').doc(expense.id).update(data);
+  }
+
   Future<void> _generateRecurring() async {
     final now = DateTime.now();
     final startOfMonth = DateTime(now.year, now.month, 1);
@@ -128,7 +158,6 @@ class StorageServiceFirebase implements StorageService {
 
   @override
   Future<List<Expense>> getExpensesForMonth(DateTime month) async {
-    await _generateRecurring();
     final start = DateTime(month.year, month.month, 1);
     final end = DateTime(month.year, month.month + 1, 0, 23, 59, 59);
 
@@ -162,7 +191,7 @@ class StorageServiceFirebase implements StorageService {
 
   @override
   Future<void> resetAll() async {
-    final collections = ['users', 'categories', 'expenses'];
+    final collections = ['users', 'categories', 'expenses', '_meta'];
     for (final name in collections) {
       final docs = await _firestore.collection(name).get();
       final batch = _firestore.batch();

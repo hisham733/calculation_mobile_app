@@ -1,19 +1,20 @@
 enum SplitMode { percentage, individual }
 
 class Expense {
-  final String? id;
-  final String description;
-  final DateTime date;
-  final double totalAmount;
-  final SplitMode splitMode;
-  final double? splitPercentageA;
-  final double? splitPercentageB;
-  final double? amountA;
-  final double? amountB;
-  final String paidById;
-  final String categoryId;
-  final bool isRecurring;
-  final String recurringInterval;
+  String? id;
+  String description;
+  DateTime date;
+  double totalAmount;
+  SplitMode splitMode;
+  double? splitPercentageA;
+  double? splitPercentageB;
+  double? amountA;
+  double? amountB;
+  String paidById;
+  String categoryId;
+  bool isRecurring;
+  String recurringInterval;
+  String notes;
 
   Expense({
     this.id,
@@ -29,6 +30,7 @@ class Expense {
     required this.categoryId,
     this.isRecurring = false,
     this.recurringInterval = 'none',
+    this.notes = '',
   });
 
   double get shareA {
@@ -65,6 +67,7 @@ class Expense {
         'category_id': categoryId,
         'is_recurring': isRecurring,
         'recurring_interval': recurringInterval,
+        'notes': notes,
       };
 
   factory Expense.fromMap(Map<String, dynamic> map) => Expense(
@@ -82,7 +85,43 @@ class Expense {
         amountB: (map['amount_b'] as num?)?.toDouble(),
         paidById: map['paid_by_id'] as String,
         categoryId: map['category_id'] as String,
-        isRecurring: map['is_recurring'] as bool? ?? false,
+        isRecurring: map['is_recurring'] is bool
+            ? map['is_recurring'] as bool
+            : (map['is_recurring'] as int? ?? 0) == 1,
         recurringInterval: map['recurring_interval'] as String? ?? 'none',
+        notes: map['notes'] as String? ?? '',
+      );
+
+  Expense copyWith({
+    String? id,
+    String? description,
+    DateTime? date,
+    double? totalAmount,
+    SplitMode? splitMode,
+    double? splitPercentageA,
+    double? splitPercentageB,
+    double? amountA,
+    double? amountB,
+    String? paidById,
+    String? categoryId,
+    bool? isRecurring,
+    String? recurringInterval,
+    String? notes,
+  }) =>
+      Expense(
+        id: id ?? this.id,
+        description: description ?? this.description,
+        date: date ?? this.date,
+        totalAmount: totalAmount ?? this.totalAmount,
+        splitMode: splitMode ?? this.splitMode,
+        splitPercentageA: splitPercentageA ?? this.splitPercentageA,
+        splitPercentageB: splitPercentageB ?? this.splitPercentageB,
+        amountA: amountA ?? this.amountA,
+        amountB: amountB ?? this.amountB,
+        paidById: paidById ?? this.paidById,
+        categoryId: categoryId ?? this.categoryId,
+        isRecurring: isRecurring ?? this.isRecurring,
+        recurringInterval: recurringInterval ?? this.recurringInterval,
+        notes: notes ?? this.notes,
       );
 }

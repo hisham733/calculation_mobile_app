@@ -6,7 +6,9 @@ import '../models/category.dart';
 import '../services/storage_provider.dart';
 
 class AddExpenseScreen extends StatefulWidget {
-  const AddExpenseScreen({super.key});
+  final Expense? existingExpense;
+
+  const AddExpenseScreen({super.key, this.existingExpense});
 
   @override
   State<AddExpenseScreen> createState() => _AddExpenseScreenState();
@@ -20,14 +22,17 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   final _amountController = TextEditingController();
   final _individualAController = TextEditingController();
   final _individualBController = TextEditingController();
+  final _notesController = TextEditingController();
 
-  DateTime _date = DateTime.now();
+  late DateTime _date;
   Category? _selectedCategory;
   UserProfile? _paidBy;
   SplitMode _splitMode = SplitMode.percentage;
   double _percentageA = 50;
   double _percentageB = 50;
   bool _isRecurring = false;
+
+  bool get _isEditing => widget.existingExpense != null;
 
   List<UserProfile> _users = [];
   List<Category> _categories = [];
@@ -36,12 +41,29 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   @override
   void initState() {
     super.initState();
+    _date = widget.existingExpense?.date ?? DateTime.now();
+    if (_isEditing) {
+      final e = widget.existingExpense!;
+      _descController.text = e.description;
+      _amountController.text = e.totalAmount.toStringAsFixed(2);
+      _splitMode = e.splitMode;
+      _percentageA = e.splitPercentageA ?? 50;
+      _percentageB = e.splitPercentageB ?? 50;
+      _individualAController.text = e.amountA?.toStringAsFixed(2) ?? '';
+      _individualBController.text = e.amountB?.toStringAsFixed(2) ?? '';
+      _isRecurring = e.isRecurring;
+      _notesController.text = e.notes;
+    }
     _load();
   }
 
   Future<void> _load() async {
     final users = await _storage.getUsers();
     final categories = await _storage.getCategories();
+    if (_isEditing) {
+      _selectedCategory = categories.where((c) => c.id == widget.existingExpense!.categoryId).firstOrNull;
+      _paidBy = users.where((u) => u.id == widget.existingExpense!.paidById).firstOrNull;
+    }
     setState(() {
       _users = users;
       _categories = categories;
@@ -55,6 +77,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     _amountController.dispose();
     _individualAController.dispose();
     _individualBController.dispose();
+    _notesController.dispose();
     super.dispose();
   }
 
@@ -66,7 +89,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Add Expense'),
+        title: Text(_isEditing ? 'Edit Expense' : 'Add Expense'),
         actions: [
           TextButton(
             onPressed: _save,
@@ -113,7 +136,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                         value: c,
                         child: Row(
                           children: [
-                            Icon(Icons.add, size: 18, color: Colors.grey[600]),
+                            Icon(IconData(c.iconCodePoint, fontFamily: 'MaterialIcons'), size: 18, color: Colors.grey[600]),
                             const SizedBox(width: 8),
                             Text(c.name),
                           ],
@@ -166,6 +189,12 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               subtitle: const Text('Auto-generate this expense each month'),
               value: _isRecurring,
               onChanged: (v) => setState(() => _isRecurring = v),
+            ),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _notesController,
+              decoration: const InputDecoration(labelText: 'Notes (optional)'),
+              maxLines: 2,
             ),
           ],
         ),
@@ -279,6 +308,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     }
 
     final expense = Expense(
+      id: _isEditing ? widget.existingExpense!.id : null,
       description: _descController.text,
       date: _date,
       totalAmount: total,
@@ -291,9 +321,14 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       categoryId: _selectedCategory!.id!,
       isRecurring: _isRecurring,
       recurringInterval: _isRecurring ? 'monthly' : 'none',
+      notes: _notesController.text,
     );
 
-    _storage.insertExpense(expense);
+    if (_isEditing) {
+      _storage.updateExpense(expense);
+    } else {
+      _storage.insertExpense(expense);
+    }
     Navigator.pop(context);
   }
 }

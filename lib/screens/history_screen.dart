@@ -5,6 +5,7 @@ import '../models/user_profile.dart';
 import '../models/category.dart';
 import '../services/storage_provider.dart';
 import '../helpers/calculations.dart';
+import 'add_expense_screen.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -48,6 +49,23 @@ class _HistoryScreenState extends State<HistoryScreen> {
     _load();
   }
 
+  Future<void> _pickMonth() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedMonth,
+      firstDate: DateTime(2023),
+      lastDate: DateTime(2030),
+      helpText: 'Select month',
+    );
+    if (picked != null) {
+      setState(() {
+        _selectedMonth = DateTime(picked.year, picked.month, 1);
+        _loading = true;
+      });
+      _load();
+    }
+  }
+
   List<Expense> get _filtered {
     if (_selectedCategoryId == null) return _expenses;
     return _expenses.where((e) => e.categoryId == _selectedCategoryId).toList();
@@ -87,7 +105,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       Expanded(
                         child: ListView.builder(
                           itemCount: _filtered.length,
-                          itemBuilder: (_, i) => _expenseTile(_filtered[i]),
+                          itemBuilder: (_, i) => _expenseTile(context, _filtered[i]),
                         ),
                       ),
                     ],
@@ -106,7 +124,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(icon: const Icon(Icons.chevron_left), onPressed: () => _changeMonth(-1)),
-          Text(monthText, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+          GestureDetector(
+            onTap: _pickMonth,
+            child: Text(monthText, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+          ),
           IconButton(icon: const Icon(Icons.chevron_right), onPressed: () => _changeMonth(1)),
         ],
       ),
@@ -139,27 +160,60 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  Widget _expenseTile(Expense expense) {
-    final catName = _categories.where((c) => c.id == expense.categoryId).firstOrNull?.name ?? '';
+  Widget _expenseTile(BuildContext context, Expense expense) {
+    final cat = _categories.where((c) => c.id == expense.categoryId).firstOrNull;
+    final catName = cat?.name ?? '';
     final userName = _users.where((u) => u.id == expense.paidById).firstOrNull?.name ?? '';
     final dateStr = DateFormat('MMM d').format(expense.date);
     final splitStr = expense.splitMode == SplitMode.percentage
         ? '${expense.splitPercentageA?.toInt() ?? 50}/${expense.splitPercentageB?.toInt() ?? 50}'
         : 'Split';
 
-    return ListTile(
-      leading: Icon(Icons.category, color: Colors.grey[600]),
-      title: Text(expense.description),
-      subtitle: Text('$userName · $dateStr · $catName'),
-      trailing: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Text(Calculations.currency(expense.totalAmount),
-              style: const TextStyle(fontWeight: FontWeight.bold)),
-          Text(splitStr, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
-        ],
+    return Dismissible(
+      key: ValueKey(expense.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 16),
+        color: Colors.red,
+        child: const Icon(Icons.delete, color: Colors.white),
+      ),
+      onDismissed: (_) async {
+        await _storage.deleteExpense(expense.id!);
+        _load();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${expense.description} deleted'),
+            action: SnackBarAction(label: 'Undo', onPressed: () async {
+              _storage.insertExpense(expense);
+              _load();
+            }),
+          ),
+        );
+      },
+      child: ListTile(
+        onTap: () => _editExpense(context, expense),
+        leading: Icon(IconData(cat?.iconCodePoint ?? 0xe3e9, fontFamily: 'MaterialIcons'), color: Colors.grey[600]),
+        title: Text(expense.description),
+        subtitle: Text('$userName · $dateStr · $catName'),
+        trailing: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(Calculations.currency(expense.totalAmount),
+                style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(splitStr, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+          ],
+        ),
       ),
     );
+  }
+
+  Future<void> _editExpense(BuildContext context, Expense expense) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => AddExpenseScreen(existingExpense: expense)),
+    );
+    _load();
   }
 }
