@@ -29,6 +29,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   SortMode _sortMode = SortMode.dateDesc;
   final _searchCtrl = TextEditingController();
   String _searchQuery = '';
+  bool _searchAllMonths = false;
 
   @override
   void initState() {
@@ -45,7 +46,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Future<void> _load() async {
     final users = await _storage.getUsers();
     final categories = await _storage.getCategories();
-    final expenses = await _storage.getExpensesForMonth(_selectedMonth);
+    final expenses = _searchAllMonths
+        ? await _storage.getAllExpenses()
+        : await _storage.getExpensesForMonth(_selectedMonth);
     setState(() {
       _users = users;
       _categories = categories;
@@ -53,7 +56,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
       _loading = false;
     });
   }
-
   void _changeMonth(int delta) {
     setState(() {
       _selectedMonth = DateTime(_selectedMonth.year, _selectedMonth.month + delta, 1);
@@ -140,23 +142,44 @@ class _HistoryScreenState extends State<HistoryScreen> {
             _filterBar(),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: TextField(
-                controller: _searchCtrl,
-                decoration: InputDecoration(
-                  hintText: 'Search...',
-                  prefixIcon: const Icon(Icons.search, size: 20),
-                  suffixIcon: _searchQuery.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear, size: 18),
-                          onPressed: () {
-                            _searchCtrl.clear();
-                            setState(() => _searchQuery = '');
-                          },
-                        )
-                      : null,
-                  isDense: true,
-                ),
-                onChanged: (v) => setState(() => _searchQuery = v),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _searchCtrl,
+                      decoration: InputDecoration(
+                        hintText: _searchAllMonths ? 'Search all months...' : 'Search...',
+                        prefixIcon: const Icon(Icons.search, size: 20),
+                        suffixIcon: _searchQuery.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear, size: 18),
+                                onPressed: () {
+                                  _searchCtrl.clear();
+                                  setState(() => _searchQuery = '');
+                                },
+                              )
+                            : null,
+                        isDense: true,
+                      ),
+                      onChanged: (v) => setState(() => _searchQuery = v),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: Icon(
+                      _searchAllMonths ? Icons.unfold_less : Icons.unfold_more,
+                      size: 20,
+                    ),
+                    tooltip: _searchAllMonths ? 'Search this month only' : 'Search all months',
+                    onPressed: () {
+                      setState(() {
+                        _searchAllMonths = !_searchAllMonths;
+                        _loading = true;
+                      });
+                      _load();
+                    },
+                  ),
+                ],
               ),
             ),
             Padding(
@@ -197,7 +220,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       Text(
                         _searchQuery.isNotEmpty || _selectedCategoryId != null
                             ? 'No matching expenses'
-                            : 'No expenses',
+                            : _searchAllMonths
+                                ? 'No expenses'
+                                : 'No expenses',
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                       ),
                     ],
@@ -286,7 +311,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final cat = _categories.where((c) => c.id == expense.categoryId).firstOrNull;
     final catName = cat?.name ?? '';
     final userName = _users.where((u) => u.id == expense.paidById).firstOrNull?.name ?? '';
-    final dateStr = DateFormat('MMM d').format(expense.date);
+    final dateStr = DateFormat(_searchAllMonths ? 'MMM d, yyyy' : 'MMM d').format(expense.date);
     final splitStr = expense.splitMode == SplitMode.percentage
         ? '${expense.splitPercentageA?.toInt() ?? 50}/${expense.splitPercentageB?.toInt() ?? 50}'
         : 'Split';
