@@ -60,7 +60,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
     final total = _currentExpenses.fold(0.0, (s, e) => s + e.totalAmount);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Budget')),
+      appBar: AppBar(title: _appTitle(Icons.pie_chart, 'Budget', 'Spending by category')),
       body: _currentExpenses.isEmpty
           ? Center(
               child: Column(
@@ -216,10 +216,34 @@ class _BudgetScreenState extends State<BudgetScreen> {
                         style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: cs.error)),
                 ],
               ),
-            ],
+            ],    // closes if (hasBudget) spread
+          ],      // closes Column children
+        ),        // closes Column
+      ),          // closes Padding
+    );            // closes Card
+  }
+
+  Widget _appTitle(IconData icon, String title, String subtitle) {
+    final cs = Theme.of(context).colorScheme;
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: cs.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, size: 20, color: cs.primary),
+        ),
+        const SizedBox(width: 12),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+            Text(subtitle, style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
           ],
         ),
-      ),
+      ],
     );
   }
 }

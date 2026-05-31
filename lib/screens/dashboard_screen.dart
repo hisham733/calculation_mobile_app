@@ -92,7 +92,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Dashboard')),
+      appBar: AppBar(title: _appTitle(Icons.dashboard_rounded, 'Dashboard', 'Monthly overview')),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _addExpense(context),
         icon: const Icon(Icons.add),
@@ -148,6 +148,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _appTitle(IconData icon, String title, String subtitle) {
+    final cs = Theme.of(context).colorScheme;
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: cs.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, size: 20, color: cs.primary),
+        ),
+        const SizedBox(width: 12),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+            Text(subtitle, style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+          ],
+        ),
+      ],
     );
   }
 

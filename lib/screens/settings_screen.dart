@@ -51,7 +51,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final appState = SharedExpenseApp.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: AppBar(title: _appTitle(Icons.settings, 'Settings', 'Manage your data')),
       body: ListView(
         children: [
           _usersSection(),
@@ -332,6 +332,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
           );
         },
       ),
+    );
+  }
+
+  Widget _appTitle(IconData icon, String title, String subtitle) {
+    final cs = Theme.of(context).colorScheme;
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: cs.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, size: 20, color: cs.primary),
+        ),
+        const SizedBox(width: 12),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+            Text(subtitle, style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+          ],
+        ),
+      ],
     );
   }
 }

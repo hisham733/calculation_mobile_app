@@ -125,7 +125,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final monthText = DateFormat('MMMM yyyy').format(_selectedMonth);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('History')),
+      appBar: AppBar(title: _appTitle(Icons.history, 'History', 'Track all expenses')),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _addExpense(context),
         child: const Icon(Icons.add),
@@ -362,6 +362,30 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final cs = Theme.of(context).colorScheme;
     final colors = [cs.primary, cs.secondary, cs.tertiary, cs.primary.withValues(alpha: 0.6), cs.secondary.withValues(alpha: 0.6)];
     return colors[name.hashCode % colors.length];
+  }
+
+  Widget _appTitle(IconData icon, String title, String subtitle) {
+    final cs = Theme.of(context).colorScheme;
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: cs.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, size: 20, color: cs.primary),
+        ),
+        const SizedBox(width: 12),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+            Text(subtitle, style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+          ],
+        ),
+      ],
+    );
   }
 
   Future<void> _editExpense(BuildContext context, Expense expense) async {
