@@ -30,6 +30,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
   final _searchCtrl = TextEditingController();
   String _searchQuery = '';
   bool _searchAllMonths = false;
+  DateTime? _dateFrom;
+  DateTime? _dateTo;
 
   @override
   void initState() {
@@ -91,10 +93,40 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }
   }
 
-  /// Filters expenses by category chip and search query, then sorts by selected mode.
+  Widget _dateChip(String label, DateTime? date, VoidCallback onTap) {
+    final cs = Theme.of(context).colorScheme;
+    return ActionChip(
+      avatar: Icon(Icons.calendar_today, size: 14, color: cs.onSurfaceVariant),
+      label: Text(date != null ? DateFormat('MMM d').format(date) : label, style: const TextStyle(fontSize: 12)),
+      onPressed: onTap,
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+    );
+  }
+
+  Future<void> _pickDate(bool isFrom) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: isFrom ? (_dateFrom ?? DateTime.now()) : (_dateTo ?? DateTime.now()),
+      firstDate: DateTime(2023),
+      lastDate: DateTime(2030),
+    );
+    if (picked != null) {
+      setState(() {
+        if (isFrom) {
+          _dateFrom = picked;
+        } else {
+          _dateTo = picked;
+        }
+      });
+    }
+  }
+
+  /// Filters expenses by category chip, search query, and date range, then sorts.
   List<Expense> get _filtered {
     var result = _expenses.where((e) {
       if (_selectedCategoryId != null && e.categoryId != _selectedCategoryId) return false;
+      if (_dateFrom != null && e.date.isBefore(_dateFrom!)) return false;
+      if (_dateTo != null && e.date.isAfter(_dateTo!.add(Duration(days: 1)))) return false;
       if (_searchQuery.isNotEmpty) {
         final q = _searchQuery.toLowerCase();
         if (!e.description.toLowerCase().contains(q) &&
@@ -183,6 +215,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     onPressed: () {
                       setState(() {
                         _searchAllMonths = !_searchAllMonths;
+                        _dateFrom = null;
+                        _dateTo = null;
                         _loading = true;
                       });
                       _load();
@@ -191,6 +225,22 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 ],
               ),
             ),
+            if (_searchAllMonths)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    _dateChip('From', _dateFrom, () => _pickDate(true)),
+                    const SizedBox(width: 8),
+                    _dateChip('To', _dateTo, () => _pickDate(false)),
+                    if (_dateFrom != null || _dateTo != null)
+                      TextButton(
+                        onPressed: () => setState(() { _dateFrom = null; _dateTo = null; }),
+                        child: const Text('Clear', style: TextStyle(fontSize: 12)),
+                      ),
+                  ],
+                ),
+              ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               child: Row(
