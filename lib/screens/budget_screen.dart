@@ -149,7 +149,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
     );
   }
 
-  /// Budget progress bar with rollover, color-coded by usage level.
+  /// Budget progress bar with rollover, color-coded by usage level, with alerts at 80%+.
   Widget _budgetTile(Category category, double spent) {
     final cs = Theme.of(context).colorScheme;
     final budget = category.monthlyBudget ?? 0;
@@ -158,6 +158,8 @@ class _BudgetScreenState extends State<BudgetScreen> {
     final available = budget + rollover;
     final ratio = hasBudget ? (spent / available).clamp(0.0, 1.0) : 0.0;
     final remaining = hasBudget ? (available - spent).clamp(0.0, double.infinity) : 0.0;
+    final over80 = ratio >= 0.8;
+    final over100 = ratio >= 1.0;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -168,7 +170,22 @@ class _BudgetScreenState extends State<BudgetScreen> {
           children: [
             Row(
               children: [
-                Icon(IconData(category.iconCodePoint, fontFamily: 'MaterialIcons'), color: cs.primary),
+                Stack(
+                  children: [
+                    Icon(IconData(category.iconCodePoint, fontFamily: 'MaterialIcons'), color: cs.primary),
+                    if (over80)
+                      Positioned(
+                        right: -2, top: -2,
+                        child: Container(
+                          width: 10, height: 10,
+                          decoration: BoxDecoration(
+                            color: over100 ? cs.error : const Color(0xFFFF8C42),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
                 const SizedBox(width: 8),
                 Expanded(child: Text(category.name, style: const TextStyle(fontWeight: FontWeight.w600))),
                 if (hasBudget)
@@ -198,6 +215,30 @@ class _BudgetScreenState extends State<BudgetScreen> {
             ),
             if (hasBudget) ...[
               const SizedBox(height: 8),
+              if (over80)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(
+                    children: [
+                      Icon(
+                        over100 ? Icons.warning : Icons.info_outline,
+                        size: 14,
+                        color: over100 ? cs.error : const Color(0xFFFF8C42),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        over100
+                            ? 'Over budget! Spending exceeds limit.'
+                            : '${(ratio * 100).toInt()}% of budget used — ${Calculations.currency(remaining)} remaining',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: over100 ? cs.error : const Color(0xFFFF8C42),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ClipRRect(
                 borderRadius: BorderRadius.circular(4),
                 child: LinearProgressIndicator(
@@ -205,7 +246,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
                   minHeight: 8,
                   backgroundColor: cs.surfaceContainerHighest,
                   valueColor: AlwaysStoppedAnimation(
-                    ratio > 0.9 ? const Color(0xFFD32F2F) : ratio > 0.7 ? const Color(0xFFFF8C42) : const Color(0xFF2D6A4F),
+                    over100 ? const Color(0xFFD32F2F) : over80 ? const Color(0xFFFF8C42) : const Color(0xFF2D6A4F),
                   ),
                 ),
               ),
