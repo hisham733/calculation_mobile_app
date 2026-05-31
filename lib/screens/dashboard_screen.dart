@@ -157,8 +157,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const SizedBox(height: 8),
             if (_filtered.isEmpty)
               _emptyState()
-            else
+            else ...[
               ..._filtered.take(10).map((e) => _expenseTile(context, e)),
+              const Divider(height: 1, indent: 16, endIndent: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                child: Row(
+                  children: [
+                    Text('Total', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: Theme.of(context).colorScheme.onSurface)),
+                    const Spacer(),
+                    Text(Calculations.currency(_filtered.fold(0.0, (s, e) => s + e.totalAmount)),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),
