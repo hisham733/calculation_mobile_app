@@ -229,19 +229,28 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   /// Month navigation bar with left/right arrows and tappable month name.
   Widget _monthNav(String monthText) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          IconButton(icon: const Icon(Icons.chevron_left), onPressed: () => _changeMonth(-1)),
-          GestureDetector(
-            onTap: _pickMonth,
-            child: Text(monthText, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-          ),
-          IconButton(icon: const Icon(Icons.chevron_right), onPressed: () => _changeMonth(1)),
-        ],
+    final cs = Theme.of(context).colorScheme;
+    return Card(
+      margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            IconButton(icon: const Icon(Icons.chevron_left), onPressed: () => _changeMonth(-1)),
+            GestureDetector(
+              onTap: _pickMonth,
+              child: Row(
+                children: [
+                  Icon(Icons.calendar_month, size: 18, color: cs.primary),
+                  const SizedBox(width: 8),
+                  Text(monthText, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                ],
+              ),
+            ),
+            IconButton(icon: const Icon(Icons.chevron_right), onPressed: () => _changeMonth(1)),
+          ],
+        ),
       ),
     );
   }
@@ -283,8 +292,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
         : 'Split';
     final cs = Theme.of(context).colorScheme;
 
+    final color = cat != null
+        ? _colorForCategory(cat.name)
+        : cs.primary.withValues(alpha: 0.4);
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+      clipBehavior: Clip.antiAlias,
       child: Dismissible(
         key: ValueKey(expense.id),
         direction: DismissDirection.endToStart,
@@ -313,28 +327,41 @@ class _HistoryScreenState extends State<HistoryScreen> {
             );
           }
         },
-        child: ListTile(
-          onTap: () => _editExpense(context, expense),
-          leading: CircleAvatar(
-            backgroundColor: cs.primaryContainer,
-            child: Icon(IconData(cat?.iconCodePoint ?? 0xe3e9, fontFamily: 'MaterialIcons'),
-                color: cs.onPrimaryContainer, size: 20),
-          ),
-          title: Text(expense.description),
-          subtitle: Text('$userName \u00b7 $dateStr \u00b7 $catName',
-              style: TextStyle(color: cs.onSurface.withValues(alpha: 0.6))),
-          trailing: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(Calculations.currency(expense.totalAmount),
-                  style: const TextStyle(fontWeight: FontWeight.bold)),
-              Text(splitStr, style: TextStyle(fontSize: 11, color: cs.onSurface.withValues(alpha: 0.5))),
-            ],
-          ),
+        child: Row(
+          children: [
+            Container(width: 4, color: color),
+            Expanded(
+              child: ListTile(
+                onTap: () => _editExpense(context, expense),
+                leading: CircleAvatar(
+                  backgroundColor: cs.primaryContainer,
+                  child: Icon(IconData(cat?.iconCodePoint ?? 0xe3e9, fontFamily: 'MaterialIcons'),
+                      color: cs.onPrimaryContainer, size: 20),
+                ),
+                title: Text(expense.description),
+                subtitle: Text('$userName \u00b7 $dateStr \u00b7 $catName',
+                    style: TextStyle(color: cs.onSurface.withValues(alpha: 0.6))),
+                trailing: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(Calculations.currency(expense.totalAmount),
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    Text(splitStr, style: TextStyle(fontSize: 11, color: cs.onSurface.withValues(alpha: 0.5))),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  Color _colorForCategory(String name) {
+    final cs = Theme.of(context).colorScheme;
+    final colors = [cs.primary, cs.secondary, cs.tertiary, cs.primary.withValues(alpha: 0.6), cs.secondary.withValues(alpha: 0.6)];
+    return colors[name.hashCode % colors.length];
   }
 
   Future<void> _editExpense(BuildContext context, Expense expense) async {

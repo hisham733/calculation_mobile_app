@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import '../models/expense.dart';
 import '../models/user_profile.dart';
 import '../models/category.dart';
@@ -102,104 +103,141 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
           children: [
-            TextFormField(
-              controller: _descController,
-              decoration: const InputDecoration(labelText: 'Description'),
-              validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _amountController,
-              decoration: const InputDecoration(labelText: 'Total Amount'),
-              keyboardType: TextInputType.numberWithOptions(decimal: true),
-              inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
-              validator: (v) {
-                if (v == null || v.isEmpty) return 'Required';
-                if (double.tryParse(v) == null) return 'Invalid number';
-                return null;
-              },
-            ),
-            const SizedBox(height: 12),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Date'),
-              trailing: Text(
-                '${_date.year}-${_date.month.toString().padLeft(2, '0')}-${_date.day.toString().padLeft(2, '0')}',
+            _sectionCard([
+              TextFormField(
+                controller: _descController,
+                decoration: const InputDecoration(
+                  labelText: 'Description',
+                  prefixIcon: Icon(Icons.receipt_outlined),
+                ),
+                validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
               ),
-              onTap: _pickDate,
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<Category>(
-              decoration: const InputDecoration(labelText: 'Category'),
-              items: _categories
-                  .map((c) => DropdownMenuItem(
-                        value: c,
-                        child: Row(
-                          children: [
-                            Icon(IconData(c.iconCodePoint, fontFamily: 'MaterialIcons'), size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                            const SizedBox(width: 8),
-                            Text(c.name),
-                          ],
-                        ),
-                      ))
-                  .toList(),
-              onChanged: (v) => setState(() => _selectedCategory = v),
-              validator: (v) => v == null ? 'Required' : null,
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<UserProfile>(
-              decoration: const InputDecoration(labelText: 'Paid By'),
-              items: _users
-                  .map((u) => DropdownMenuItem(
-                        value: u,
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 10, height: 10,
-                              decoration: BoxDecoration(shape: BoxShape.circle, color: u.color),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(u.name),
-                          ],
-                        ),
-                      ))
-                  .toList(),
-              onChanged: (v) => setState(() => _paidBy = v),
-              validator: (v) => v == null ? 'Required' : null,
-            ),
-            const SizedBox(height: 20),
-            const Text('Split Mode', style: TextStyle(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 8),
-            SegmentedButton<SplitMode>(
-              segments: const [
-                ButtonSegment(value: SplitMode.percentage, label: Text('Percentage')),
-                ButtonSegment(value: SplitMode.individual, label: Text('Individual')),
-              ],
-              selected: {_splitMode},
-              onSelectionChanged: (v) => setState(() => _splitMode = v.first),
-            ),
-            const SizedBox(height: 20),
-            if (_splitMode == SplitMode.percentage)
-              _percentageFields()
-            else
-              _individualFields(),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _amountController,
+                decoration: const InputDecoration(
+                  labelText: 'Total Amount',
+                  prefixIcon: Icon(Icons.monetization_on_outlined),
+                ),
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Required';
+                  if (double.tryParse(v) == null) return 'Invalid number';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              InkWell(
+                onTap: _pickDate,
+                borderRadius: BorderRadius.circular(12),
+                child: InputDecorator(
+                  decoration: const InputDecoration(
+                    labelText: 'Date',
+                    prefixIcon: Icon(Icons.calendar_today),
+                  ),
+                  child: Text(
+                    DateFormat('MMM d, yyyy').format(_date),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<Category>(
+                decoration: const InputDecoration(
+                  labelText: 'Category',
+                  prefixIcon: Icon(Icons.category_outlined),
+                ),
+                items: _categories
+                    .map((c) => DropdownMenuItem(
+                          value: c,
+                          child: Row(
+                            children: [
+                              Icon(IconData(c.iconCodePoint, fontFamily: 'MaterialIcons'), size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                              const SizedBox(width: 8),
+                              Text(c.name),
+                            ],
+                          ),
+                        ))
+                    .toList(),
+                onChanged: (v) => setState(() => _selectedCategory = v),
+                validator: (v) => v == null ? 'Required' : null,
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<UserProfile>(
+                decoration: const InputDecoration(
+                  labelText: 'Paid By',
+                  prefixIcon: Icon(Icons.person_outline),
+                ),
+                items: _users
+                    .map((u) => DropdownMenuItem(
+                          value: u,
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 10, height: 10,
+                                decoration: BoxDecoration(shape: BoxShape.circle, color: u.color),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(u.name),
+                            ],
+                          ),
+                        ))
+                    .toList(),
+                onChanged: (v) => setState(() => _paidBy = v),
+                validator: (v) => v == null ? 'Required' : null,
+              ),
+            ]),
             const SizedBox(height: 16),
-            SwitchListTile(
-              title: const Text('Repeat monthly'),
-              subtitle: const Text('Auto-generate this expense each month'),
-              value: _isRecurring,
-              onChanged: (v) => setState(() => _isRecurring = v),
-            ),
-            const SizedBox(height: 8),
-            TextFormField(
-              controller: _notesController,
-              decoration: const InputDecoration(labelText: 'Notes (optional)'),
-              maxLines: 2,
-            ),
+            _sectionCard([
+              const Text('Split Mode', style: TextStyle(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 12),
+              SegmentedButton<SplitMode>(
+                segments: const [
+                  ButtonSegment(value: SplitMode.percentage, label: Text('Percentage')),
+                  ButtonSegment(value: SplitMode.individual, label: Text('Individual')),
+                ],
+                selected: {_splitMode},
+                onSelectionChanged: (v) => setState(() => _splitMode = v.first),
+              ),
+              const SizedBox(height: 16),
+              if (_splitMode == SplitMode.percentage)
+                _percentageFields()
+              else
+                _individualFields(),
+            ]),
+            const SizedBox(height: 16),
+            _sectionCard([
+              SwitchListTile(
+                title: const Text('Repeat monthly'),
+                subtitle: const Text('Auto-generate this expense each month'),
+                value: _isRecurring,
+                onChanged: (v) => setState(() => _isRecurring = v),
+                contentPadding: EdgeInsets.zero,
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _notesController,
+                decoration: const InputDecoration(
+                  labelText: 'Notes (optional)',
+                  prefixIcon: Icon(Icons.notes),
+                ),
+                maxLines: 2,
+              ),
+            ]),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _sectionCard(List<Widget> children) {
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
       ),
     );
   }
@@ -242,18 +280,26 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   }
 
   Widget _percentageSlider(String label, Color color, double value, ValueChanged<double> onChanged) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+    final cs = Theme.of(context).colorScheme;
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(width: 8, height: 8, decoration: BoxDecoration(shape: BoxShape.circle, color: color)),
-            const SizedBox(width: 6),
-            Text('$label: ${value.toInt()}%'),
+            Row(
+              children: [
+                Container(width: 8, height: 8, decoration: BoxDecoration(shape: BoxShape.circle, color: color)),
+                const SizedBox(width: 6),
+                Text('$label: ${value.toInt()}%', style: const TextStyle(fontWeight: FontWeight.w500)),
+              ],
+            ),
+            Slider(value: value, onChanged: onChanged, min: 0, max: 100, divisions: 20),
           ],
         ),
-        Slider(value: value, onChanged: onChanged, min: 0, max: 100, divisions: 20),
-      ],
+      ),
     );
   }
 
@@ -279,10 +325,19 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         ],
         if (_individualAController.text.isNotEmpty && _individualBController.text.isNotEmpty)
           Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(
-              'Total: ${Calculations.currency(_calculateIndividualTotal())}',
-              style: const TextStyle(fontWeight: FontWeight.bold),
+            padding: const EdgeInsets.only(top: 12),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                'Total: ${Calculations.currency(_calculateIndividualTotal())}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
             ),
           ),
       ],

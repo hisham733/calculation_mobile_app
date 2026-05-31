@@ -128,8 +128,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
               onChanged: (v) => setState(() => _searchQuery = v),
             ),
             const SizedBox(height: 20),
-            Text('Recent Expenses', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 4),
+            Text.rich(
+              TextSpan(
+                text: 'Recent Expenses',
+                style: Theme.of(context).textTheme.titleMedium,
+                children: [
+                  TextSpan(
+                    text: '  ${_filtered.length > 10 ? '10 of ' : ''}${_filtered.length}',
+                    style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
             if (_filtered.isEmpty)
               _emptyState()
             else
@@ -171,20 +182,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final cs = Theme.of(context).colorScheme;
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 28),
-        child: Column(
-          children: [
-            Text('Total Spent This Month',
-                style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant, letterSpacing: 0.5)),
-            const SizedBox(height: 8),
-            Text(Calculations.currency(summary.totalSpent),
-                style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: cs.onSurface, letterSpacing: -0.5)),
-            const SizedBox(height: 4),
-            Text(DateFormat('MMMM yyyy').format(DateTime.now()),
-                style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
-          ],
-        ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 28),
+            child: Column(
+              children: [
+                Text('Total Spent This Month',
+                    style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant, letterSpacing: 0.5)),
+                const SizedBox(height: 8),
+                Text(Calculations.currency(summary.totalSpent),
+                    style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: cs.onSurface, letterSpacing: -0.5)),
+                const SizedBox(height: 4),
+                Text(DateFormat('MMMM yyyy').format(DateTime.now()),
+                    style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+              ],
+            ),
+          ),
+          Container(height: 3, decoration: BoxDecoration(
+            color: cs.primary,
+            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
+          )),
+        ],
       ),
     );
   }
@@ -202,29 +221,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _userCard(UserProfile user, double paid, double share) {
     final cs = Theme.of(context).colorScheme;
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: user.color,
-              child: Text(user.name[0].toUpperCase(),
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+      child: Column(
+        children: [
+          Container(
+            height: 4,
+            decoration: BoxDecoration(
+              color: user.color,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
             ),
-            const SizedBox(height: 8),
-            Text(user.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
               children: [
-                _labelValue('Paid', Calculations.currency(paid), cs),
-                Container(width: 1, height: 30, color: cs.outlineVariant),
-                _labelValue('Share', Calculations.currency(share), cs),
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: user.color,
+                  child: Text(user.name[0].toUpperCase(),
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                ),
+                const SizedBox(height: 8),
+                Text(user.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _labelValue('Paid', Calculations.currency(paid), cs),
+                    Container(width: 1, height: 30, color: cs.outlineVariant),
+                    _labelValue('Share', Calculations.currency(share), cs),
+                  ],
+                ),
               ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -305,6 +335,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final cs = Theme.of(context).colorScheme;
     return Card(
       margin: const EdgeInsets.only(bottom: 6),
+      clipBehavior: Clip.antiAlias,
       child: Dismissible(
         key: ValueKey(expense.id),
         direction: DismissDirection.endToStart,
@@ -333,20 +364,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
             );
           }
         },
-        child: ListTile(
-          onTap: () => _showExpenseDetail(context, expense),
-          leading: CircleAvatar(
-            backgroundColor: cs.primaryContainer,
-            child: Icon(IconData(cat?.iconCodePoint ?? 0xe3e9, fontFamily: 'MaterialIcons'),
-                color: cs.onPrimaryContainer, size: 20),
-          ),
-          title: Text(expense.description, style: const TextStyle(fontWeight: FontWeight.w500)),
-          subtitle: Text(
-            '${_userName(expense.paidById)} \u00b7 ${DateFormat('MMM d').format(expense.date)}',
-            style: TextStyle(fontSize: 12, color: cs.onSurface.withValues(alpha: 0.6)),
-          ),
-          trailing: Text(Calculations.currency(expense.totalAmount),
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+        child: Row(
+          children: [
+            Container(width: 4,
+              color: cat != null
+                  ? _colorForCategory(cat.name)
+                  : cs.primary.withValues(alpha: 0.4)),
+            Expanded(
+              child: ListTile(
+                onTap: () => _showExpenseDetail(context, expense),
+                leading: CircleAvatar(
+                  backgroundColor: cs.primaryContainer,
+                  child: Icon(IconData(cat?.iconCodePoint ?? 0xe3e9, fontFamily: 'MaterialIcons'),
+                      color: cs.onPrimaryContainer, size: 20),
+                ),
+                title: Text(expense.description, style: const TextStyle(fontWeight: FontWeight.w500)),
+                subtitle: Text(
+                  '${_userName(expense.paidById)} \u00b7 ${DateFormat('MMM d').format(expense.date)}',
+                  style: TextStyle(fontSize: 12, color: cs.onSurface.withValues(alpha: 0.6)),
+                ),
+                trailing: Text(Calculations.currency(expense.totalAmount),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -484,6 +525,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   String _userName(String id) {
     return _users.where((u) => u.id == id).firstOrNull?.name ?? '';
+  }
+
+  Color _colorForCategory(String name) {
+    final cs = Theme.of(context).colorScheme;
+    final colors = [cs.primary, cs.secondary, cs.tertiary, cs.primary.withValues(alpha: 0.6), cs.secondary.withValues(alpha: 0.6)];
+    return colors[name.hashCode % colors.length];
   }
 
   Future<void> _addExpense(BuildContext context) async {
