@@ -16,6 +16,12 @@ class StorageServiceStub implements StorageService {
   Future<void> updateUser(UserProfile user) => throw UnsupportedError('');
 
   @override
+  Future<void> insertUser(UserProfile user) => throw UnsupportedError('');
+
+  @override
+  Future<void> deleteUser(String id) => throw UnsupportedError('');
+
+  @override
   Future<List<Category>> getCategories() => throw UnsupportedError('');
 
   @override

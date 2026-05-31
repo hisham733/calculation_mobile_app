@@ -8,7 +8,9 @@ abstract class StorageService {
   Future<void> init();
 
   Future<List<UserProfile>> getUsers();
+  Future<void> insertUser(UserProfile user);
   Future<void> updateUser(UserProfile user);
+  Future<void> deleteUser(String id);
 
   Future<List<Category>> getCategories();
   Future<void> insertCategory(Category category);

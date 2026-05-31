@@ -41,8 +41,10 @@ class StorageServiceFirebase implements StorageService {
     final batch = _firestore.batch();
     final userARef = _firestore.collection('users').doc('user_a');
     final userBRef = _firestore.collection('users').doc('user_b');
-    batch.set(userARef, {'name': 'User A', 'color_value': 0xFF007AFF});
-    batch.set(userBRef, {'name': 'User B', 'color_value': 0xFFFF9500});
+    final userCRef = _firestore.collection('users').doc('user_c');
+    batch.set(userARef, {'name': 'Alice', 'color_value': 0xFF006D77});
+    batch.set(userBRef, {'name': 'Bob', 'color_value': 0xFFFF8C42});
+    batch.set(userCRef, {'name': 'Charlie', 'color_value': 0xFF2D6A4F});
 
     final categories = [
       {'name': 'Groceries', 'icon_code_point': 0xe8cc, 'monthly_budget': 800.0},
@@ -71,6 +73,19 @@ class StorageServiceFirebase implements StorageService {
   @override
   Future<void> updateUser(UserProfile user) async {
     await _firestore.collection('users').doc(user.id).update(user.toMap());
+  }
+
+  @override
+  Future<void> insertUser(UserProfile user) async {
+    final ref = _firestore.collection('users').doc();
+    final data = user.toMap();
+    data['id'] = ref.id;
+    await ref.set(data);
+  }
+
+  @override
+  Future<void> deleteUser(String id) async {
+    await _firestore.collection('users').doc(id).delete();
   }
 
   @override

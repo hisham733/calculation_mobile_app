@@ -312,9 +312,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final catName = cat?.name ?? '';
     final userName = _users.where((u) => u.id == expense.paidById).firstOrNull?.name ?? '';
     final dateStr = DateFormat(_searchAllMonths ? 'MMM d, yyyy' : 'MMM d').format(expense.date);
-    final splitStr = expense.splitMode == SplitMode.percentage
-        ? '${expense.splitPercentageA?.toInt() ?? 50}/${expense.splitPercentageB?.toInt() ?? 50}'
-        : 'Split';
+    final splitStr = expense.splitMode == SplitMode.equal
+        ? 'Equal'
+        : 'Custom';
     final cs = Theme.of(context).colorScheme;
 
     final color = cat != null

@@ -8,7 +8,6 @@ import '../services/storage_provider.dart';
 import '../helpers/calculations.dart';
 import 'add_expense_screen.dart';
 
-/// Main dashboard screen showing current month's expense summary.
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -69,6 +68,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (_loading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
+
     if (_users.length < 2) {
       return Scaffold(
         body: Center(
@@ -87,8 +87,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     final summary = Calculations.summary(
       expenses: _expenses,
-      userA: _users[0],
-      userB: _users[1],
+      users: _users,
     );
 
     return Scaffold(
@@ -108,7 +107,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const SizedBox(height: 12),
             _totalSpentCard(summary),
             const SizedBox(height: 12),
-            _perUserRow(summary),
+            _userCards(summary),
             const SizedBox(height: 20),
             TextField(
               controller: _searchCtrl,
@@ -232,13 +231,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _perUserRow(MonthlySummary summary) {
-    return Row(
-      children: [
-        Expanded(child: _userCard(_users[0], summary.userAPaid, summary.userAShare)),
-        const SizedBox(width: 12),
-        Expanded(child: _userCard(_users[1], summary.userBPaid, summary.userBShare)),
-      ],
+  Widget _userCards(MonthlySummary summary) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: _users.map((user) {
+          final bal = summary.balanceFor(user.id!);
+          return Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: SizedBox(
+              width: 180,
+              child: _userCard(user, bal?.paid ?? 0, bal?.share ?? 0),
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 
@@ -295,7 +302,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _settlementCard(MonthlySummary summary) {
     final settled = _settledAt != null;
-    final balanced = summary.balanceA == 0;
+    final texts = summary.settlementTexts();
+    final isBalanced = texts.length == 1 && texts.first == 'All settled';
     final cs = Theme.of(context).colorScheme;
 
     Color bgColor, iconColor;
@@ -306,7 +314,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       iconColor = cs.primary;
       icon = Icons.check_circle_outline;
       text = 'All settled this month';
-    } else if (balanced) {
+    } else if (isBalanced) {
       bgColor = cs.tertiary.withValues(alpha: 0.08);
       iconColor = cs.tertiary;
       icon = Icons.balance;
@@ -315,7 +323,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       bgColor = cs.secondary.withValues(alpha: 0.08);
       iconColor = cs.secondary;
       icon = Icons.swap_horiz;
-      text = summary.settlementText(_users[0].name, _users[1].name);
+      text = texts.join(', ');
     }
 
     return Card(
@@ -332,7 +340,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   style: TextStyle(fontWeight: FontWeight.w600, color: cs.onSurface),
                   textAlign: TextAlign.start),
             ),
-            if (!settled && !balanced)
+            if (!settled && !isBalanced)
               TextButton(
                 onPressed: () async {
                   final now = DateTime.now();
@@ -467,10 +475,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(height: 16),
                   _detailRow(Icons.person_outline, 'Paid by', user?.name ?? ''),
                   const SizedBox(height: 16),
-                  _detailRow(Icons.compare_arrows, 'Split',
-                      expense.splitMode == SplitMode.percentage
-                          ? '${expense.splitPercentageA?.toInt() ?? 50}% / ${expense.splitPercentageB?.toInt() ?? 50}%'
-                          : '${Calculations.currency(expense.amountA ?? 0)} / ${Calculations.currency(expense.amountB ?? 0)}'),
+                  _splitDetail(expense),
                   if (expense.isRecurring) ...[
                     const SizedBox(height: 16),
                     _detailRow(Icons.repeat, 'Recurring',
@@ -528,6 +533,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _splitDetail(Expense expense) {
+    final cs = Theme.of(context).colorScheme;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(Icons.compare_arrows, size: 18, color: cs.onSurfaceVariant),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Split', style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
+              const SizedBox(height: 4),
+              ...expense.participantIds.map((pid) {
+                final u = _users.where((u) => u.id == pid).firstOrNull;
+                final amount = expense.shareFor(pid);
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 2),
+                  child: Row(
+                    children: [
+                      Container(width: 8, height: 8,
+                          decoration: BoxDecoration(shape: BoxShape.circle, color: u?.color ?? cs.primary)),
+                      const SizedBox(width: 6),
+                      Text('${u?.name ?? pid}: ${Calculations.currency(amount)}',
+                          style: const TextStyle(fontSize: 13)),
+                    ],
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

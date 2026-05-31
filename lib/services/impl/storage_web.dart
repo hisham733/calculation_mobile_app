@@ -23,8 +23,9 @@ class StorageServiceWeb implements StorageService {
   Future<void> _seed() async {
     final p = await _p;
     final users = [
-      {'id': 'user_a', 'name': 'User A', 'color_value': 0xFF007AFF},
-      {'id': 'user_b', 'name': 'User B', 'color_value': 0xFFFF9500},
+      {'id': 'user_a', 'name': 'Alice', 'color_value': 0xFF006D77},
+      {'id': 'user_b', 'name': 'Bob', 'color_value': 0xFFFF8C42},
+      {'id': 'user_c', 'name': 'Charlie', 'color_value': 0xFF2D6A4F},
     ];
     p.setString('users', jsonEncode(users));
 
@@ -65,6 +66,24 @@ class StorageServiceWeb implements StorageService {
       list[idx] = user.toMap();
       _save('users', list);
     }
+  }
+
+  @override
+  Future<void> insertUser(UserProfile user) async {
+    await init();
+    final list = _list('users');
+    final u = user.toMap();
+    u['id'] = generateId();
+    list.add(u);
+    _save('users', list);
+  }
+
+  @override
+  Future<void> deleteUser(String id) async {
+    await init();
+    final list = _list('users');
+    list.removeWhere((m) => m['id'] == id);
+    _save('users', list);
   }
 
   @override

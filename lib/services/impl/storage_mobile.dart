@@ -17,7 +17,7 @@ class StorageServiceMobile implements StorageService {
     final path = join(dbPath, 'shared_expense.db');
     _db = await openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE users (
@@ -42,15 +42,13 @@ class StorageServiceMobile implements StorageService {
             date INTEGER NOT NULL,
             total_amount REAL NOT NULL,
             split_mode TEXT NOT NULL,
-            split_percentage_a REAL,
-            split_percentage_b REAL,
-            amount_a REAL,
-            amount_b REAL,
             paid_by_id TEXT NOT NULL,
             category_id TEXT NOT NULL,
             is_recurring INTEGER NOT NULL DEFAULT 0,
             recurring_interval TEXT NOT NULL DEFAULT 'none',
             notes TEXT NOT NULL DEFAULT '',
+            participant_ids TEXT NOT NULL DEFAULT '',
+            splits TEXT NOT NULL DEFAULT '{}',
             FOREIGN KEY (paid_by_id) REFERENCES users(id),
             FOREIGN KEY (category_id) REFERENCES categories(id)
           )
@@ -64,6 +62,10 @@ class StorageServiceMobile implements StorageService {
         if (oldVersion < 3) {
           await db.execute("ALTER TABLE categories ADD COLUMN color_value INTEGER NOT NULL DEFAULT 0xFF006D77");
         }
+        if (oldVersion < 4) {
+          await db.execute("ALTER TABLE expenses ADD COLUMN participant_ids TEXT NOT NULL DEFAULT ''");
+          await db.execute("ALTER TABLE expenses ADD COLUMN splits TEXT NOT NULL DEFAULT '{}'");
+        }
       },
     );
   }
@@ -71,8 +73,9 @@ class StorageServiceMobile implements StorageService {
   Database get _database => _db!;
 
   Future<void> _seed(Database db) async {
-    await db.insert('users', {'id': 'user_a', 'name': 'User A', 'color_value': 0xFF007AFF});
-    await db.insert('users', {'id': 'user_b', 'name': 'User B', 'color_value': 0xFFFF9500});
+    await db.insert('users', {'id': 'user_a', 'name': 'Alice', 'color_value': 0xFF006D77});
+    await db.insert('users', {'id': 'user_b', 'name': 'Bob', 'color_value': 0xFFFF8C42});
+    await db.insert('users', {'id': 'user_c', 'name': 'Charlie', 'color_value': 0xFF2D6A4F});
 
     final categories = [
       {'id': 'cat_1', 'name': 'Groceries', 'icon_code_point': 0xe8cc, 'color_value': 0xFF2D6A4F, 'monthly_budget': 800.0},
@@ -96,6 +99,18 @@ class StorageServiceMobile implements StorageService {
   @override
   Future<void> updateUser(UserProfile user) async {
     await _database.update('users', user.toMap(), where: 'id = ?', whereArgs: [user.id]);
+  }
+
+  @override
+  Future<void> insertUser(UserProfile user) async {
+    final u = user.toMap();
+    u['id'] = generateId();
+    await _database.insert('users', u);
+  }
+
+  @override
+  Future<void> deleteUser(String id) async {
+    await _database.delete('users', where: 'id = ?', whereArgs: [id]);
   }
 
   @override

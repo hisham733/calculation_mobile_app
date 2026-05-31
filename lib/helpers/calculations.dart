@@ -2,62 +2,116 @@ import 'package:intl/intl.dart';
 import '../models/expense.dart';
 import '../models/user_profile.dart';
 
-/// Summary of a month's expenses: totals, per-user paid vs share, and balances.
+/// Per-user summary within a month: how much they paid vs how much they owe.
+class UserBalance {
+  final String userId;
+  final String userName;
+  final double paid;
+  final double share;
+
+  UserBalance({
+    required this.userId,
+    required this.userName,
+    required this.paid,
+    required this.share,
+  });
+
+  double get balance => paid - share;
+
+  /// Positive means they overpaid (others owe them), negative means they underpaid.
+  String formattedBalance() {
+    if (balance >= 0) return Calculations.currency(balance);
+    return '-${Calculations.currency(-balance)}';
+  }
+}
+
+/// Summary of a month's expenses with N-user support.
 class MonthlySummary {
   final double totalSpent;
-  final double userAPaid;
-  final double userBPaid;
-  final double userAShare;
-  final double userBShare;
+  final List<UserBalance> userBalances;
+  final List<UserProfile> users;
 
   MonthlySummary({
     required this.totalSpent,
-    required this.userAPaid,
-    required this.userBPaid,
-    required this.userAShare,
-    required this.userBShare,
+    required this.userBalances,
+    required this.users,
   });
 
-  double get balanceA => userAPaid - userAShare;
-  double get balanceB => userBPaid - userBShare;
-
-  /// Returns a human-readable string describing the settlement needed.
-  String settlementText(String nameA, String nameB) {
-    if (balanceA > balanceB.abs()) {
-      return '$nameB owes $nameA: ${Calculations.currency(balanceA)}';
-    } else if (balanceB > balanceA.abs()) {
-      return '$nameA owes $nameB: ${Calculations.currency(balanceB)}';
+  /// Maps userId -> UserBalance for quick lookup.
+  UserBalance? balanceFor(String userId) {
+    try {
+      return userBalances.firstWhere((b) => b.userId == userId);
+    } catch (_) {
+      return null;
     }
-    return 'All settled';
+  }
+
+  /// Returns a list of settlement descriptions (who owes whom how much).
+  List<String> settlementTexts() {
+    final debtors = userBalances
+        .where((b) => b.balance < -0.005)
+        .toList()
+      ..sort((a, b) => a.balance.compareTo(b.balance));
+    final creditors = userBalances
+        .where((b) => b.balance > 0.005)
+        .toList()
+      ..sort((a, b) => b.balance.compareTo(a.balance));
+
+    final result = <String>[];
+    var di = 0, ci = 0;
+    while (di < debtors.length && ci < creditors.length) {
+      final debtor = debtors[di];
+      final creditor = creditors[ci];
+      final amount = debtor.balance.abs().clamp(0, creditor.balance) as double;
+      if (amount > 0.005) {
+        result.add('${debtor.userName} owes ${creditor.userName}: ${Calculations.currency(amount)}');
+      }
+      debtors[di] = UserBalance(
+        userId: debtor.userId,
+        userName: debtor.userName,
+        paid: debtor.paid,
+        share: debtor.share + amount,
+      );
+      creditors[ci] = UserBalance(
+        userId: creditor.userId,
+        userName: creditor.userName,
+        paid: creditor.paid,
+        share: creditor.share - amount,
+      );
+      if (debtors[di].balance >= -0.005) di++;
+      if (creditors[ci].balance <= 0.005) ci++;
+    }
+    if (result.isEmpty) result.add('All settled');
+    return result;
   }
 }
 
 /// Utility class with static methods for expense calculations and formatting.
 class Calculations {
-  /// Computes monthly summary from list of expenses and two users.
+  /// Computes monthly summary from list of expenses and all users.
   static MonthlySummary summary({
     required List<Expense> expenses,
-    required UserProfile userA,
-    required UserProfile userB,
+    required List<UserProfile> users,
   }) {
-    final userAPaid = expenses
-        .where((e) => e.paidById == userA.id)
-        .fold(0.0, (sum, e) => sum + e.totalAmount);
+    final totalSpent = expenses.fold(0.0, (s, e) => s + e.totalAmount);
 
-    final userBPaid = expenses
-        .where((e) => e.paidById == userB.id)
-        .fold(0.0, (sum, e) => sum + e.totalAmount);
-
-    final userAShare = expenses.fold(0.0, (sum, e) => sum + e.shareA);
-    final userBShare = expenses.fold(0.0, (sum, e) => sum + e.shareB);
-    final totalSpent = expenses.fold(0.0, (sum, e) => sum + e.totalAmount);
+    final userBalances = users.map((user) {
+      final paid = expenses
+          .where((e) => e.paidById == user.id)
+          .fold(0.0, (sum, e) => sum + e.totalAmount);
+      final share = expenses.fold(0.0, (sum, e) => sum + e.shareFor(user.id!));
+      return UserBalance(
+        userId: user.id!,
+        userName: user.name,
+        paid: paid,
+        share: share,
+      );
+    }).toList();
 
     return MonthlySummary(
       totalSpent: totalSpent,
-      userAPaid: userAPaid,
-      userBPaid: userBPaid,
-      userAShare: userAShare,
-      userBShare: userBShare,
+      userBalances: userBalances,
+      users: users,
     );
   }
 

@@ -126,9 +126,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       children: [
         _sectionHeader('Users'),
         ..._users.map((u) => ListTile(
-              leading: Container(
-                width: 12, height: 12,
-                decoration: BoxDecoration(shape: BoxShape.circle, color: u.color),
+              leading: CircleAvatar(
+                radius: 14,
+                backgroundColor: u.color,
+                child: Text(u.name[0].toUpperCase(),
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
               ),
               title: TextField(
                 controller: TextEditingController(text: u.name),
@@ -138,9 +140,72 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _storage.updateUser(u);
                 },
               ),
+              trailing: _users.length > 2
+                  ? IconButton(
+                      icon: const Icon(Icons.delete_outline, size: 20),
+                      onPressed: () => _deleteUser(u),
+                    )
+                  : null,
             )),
+        ListTile(
+          leading: const Icon(Icons.add),
+          title: const Text('Add User'),
+          onTap: _addUser,
+        ),
         const Divider(),
       ],
+    );
+  }
+
+  void _addUser() {
+    final nameCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Add User'),
+        content: TextField(
+          controller: nameCtrl,
+          decoration: const InputDecoration(labelText: 'Name'),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () {
+              if (nameCtrl.text.isNotEmpty) {
+                _storage.insertUser(UserProfile(
+                  name: nameCtrl.text,
+                  colorValue: _catColors[_users.length % _catColors.length],
+                ));
+                _load();
+                Navigator.pop(ctx);
+              }
+            },
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _deleteUser(UserProfile user) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('Remove ${user.name}?'),
+        content: const Text('Expenses paid by this user will remain.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () {
+              _storage.deleteUser(user.id!);
+              _load();
+              Navigator.pop(context);
+            },
+            child: const Text('Remove', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
     );
   }
 

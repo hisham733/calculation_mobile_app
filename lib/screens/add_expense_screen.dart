@@ -9,7 +9,7 @@ import '../helpers/calculations.dart';
 
 /// Form screen for adding or editing an expense.
 class AddExpenseScreen extends StatefulWidget {
-  final Expense? existingExpense; // null = adding new, non-null = editing
+  final Expense? existingExpense;
 
   const AddExpenseScreen({super.key, this.existingExpense});
 
@@ -23,16 +23,12 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
   final _descController = TextEditingController();
   final _amountController = TextEditingController();
-  final _individualAController = TextEditingController();
-  final _individualBController = TextEditingController();
   final _notesController = TextEditingController();
 
   late DateTime _date;
   Category? _selectedCategory;
   UserProfile? _paidBy;
-  SplitMode _splitMode = SplitMode.percentage;
-  double _percentageA = 50;
-  double _percentageB = 50;
+  SplitMode _splitMode = SplitMode.equal;
   bool _isRecurring = false;
 
   bool get _isEditing => widget.existingExpense != null;
@@ -40,6 +36,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   List<UserProfile> _users = [];
   List<Category> _categories = [];
   bool _loading = true;
+  List<Map<String, dynamic>> _splitData = [];
 
   @override
   void initState() {
@@ -50,10 +47,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       _descController.text = e.description;
       _amountController.text = e.totalAmount.toStringAsFixed(2);
       _splitMode = e.splitMode;
-      _percentageA = e.splitPercentageA ?? 50;
-      _percentageB = e.splitPercentageB ?? 50;
-      _individualAController.text = e.amountA?.toStringAsFixed(2) ?? '';
-      _individualBController.text = e.amountB?.toStringAsFixed(2) ?? '';
       _isRecurring = e.isRecurring;
       _notesController.text = e.notes;
     }
@@ -66,21 +59,38 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     if (_isEditing) {
       _selectedCategory = categories.where((c) => c.id == widget.existingExpense!.categoryId).firstOrNull;
       _paidBy = users.where((u) => u.id == widget.existingExpense!.paidById).firstOrNull;
+      _initSplitData(users);
     }
     setState(() {
       _users = users;
       _categories = categories;
+      if (!_isEditing) _initSplitData(users);
       _loading = false;
     });
+  }
+
+  void _initSplitData(List<UserProfile> users) {
+    final existing = widget.existingExpense;
+    _splitData = users.map((u) {
+      final savedAmount = existing?.splits[u.id!];
+      return <String, dynamic>{
+        'user': u,
+        'included': existing?.participantIds.contains(u.id) ?? true,
+        'controller': TextEditingController(
+          text: savedAmount != null ? savedAmount.toStringAsFixed(2) : '',
+        ),
+      };
+    }).toList();
   }
 
   @override
   void dispose() {
     _descController.dispose();
     _amountController.dispose();
-    _individualAController.dispose();
-    _individualBController.dispose();
     _notesController.dispose();
+    for (final sd in _splitData) {
+      (sd['controller'] as TextEditingController).dispose();
+    }
     super.dispose();
   }
 
@@ -195,17 +205,18 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               const SizedBox(height: 12),
               SegmentedButton<SplitMode>(
                 segments: const [
-                  ButtonSegment(value: SplitMode.percentage, label: Text('Percentage')),
-                  ButtonSegment(value: SplitMode.individual, label: Text('Individual')),
+                  ButtonSegment(value: SplitMode.equal, label: Text('Equal')),
+                  ButtonSegment(value: SplitMode.custom, label: Text('Custom')),
                 ],
                 selected: {_splitMode},
                 onSelectionChanged: (v) => setState(() => _splitMode = v.first),
               ),
               const SizedBox(height: 16),
-              if (_splitMode == SplitMode.percentage)
-                _percentageFields()
-              else
-                _individualFields(),
+              ..._splitData.asMap().entries.map((entry) => _userSplitRow(entry.key, entry.value)),
+              if (_splitMode == SplitMode.custom) ...[
+                const SizedBox(height: 8),
+                _totalCheck(),
+              ],
             ]),
             const SizedBox(height: 16),
             _sectionCard([
@@ -242,112 +253,81 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     );
   }
 
-  /// Percentage split sliders with 50/50 reset button.
-  Widget _percentageFields() {
-    return Column(
-      children: [
-        if (_users.isNotEmpty) ...[
-          _percentageSlider(_users[0].name, _users[0].color, _percentageA, (v) {
-            setState(() {
-              _percentageA = v;
-              _percentageB = 100 - v;
-            });
-          }),
-          const SizedBox(height: 12),
-          _percentageSlider(
-              _users.length > 1 ? _users[1].name : 'User B',
-              _users.length > 1 ? _users[1].color : Colors.orange,
-              _percentageB, (v) {
-            setState(() {
-              _percentageB = v;
-              _percentageA = 100 - v;
-            });
-          }),
-          const SizedBox(height: 8),
-          Center(
-            child: TextButton.icon(
-              icon: const Icon(Icons.balance, size: 16),
-              label: const Text('Reset to 50/50'),
-              onPressed: () => setState(() {
-                _percentageA = 50;
-                _percentageB = 50;
-              }),
+  Widget _userSplitRow(int index, Map<String, dynamic> data) {
+    final user = data['user'] as UserProfile;
+    final included = data['included'] as bool;
+    final controller = data['controller'] as TextEditingController;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 28,
+            child: Checkbox(
+              value: included,
+              onChanged: (v) {
+                setState(() => _splitData[index]['included'] = v);
+              },
             ),
           ),
+          Container(
+            width: 10, height: 10,
+            decoration: BoxDecoration(shape: BoxShape.circle, color: user.color),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(user.name, style: const TextStyle(fontWeight: FontWeight.w500)),
+          ),
+          if (_splitMode == SplitMode.custom)
+            SizedBox(
+              width: 120,
+              child: TextField(
+                controller: controller,
+                decoration: const InputDecoration(
+                  isDense: true,
+                  hintText: 'Amount',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
+                enabled: included,
+              ),
+            )
+          else
+            Text('Equal share', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13)),
         ],
-      ],
-    );
-  }
-
-  Widget _percentageSlider(String label, Color color, double value, ValueChanged<double> onChanged) {
-    final cs = Theme.of(context).colorScheme;
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(width: 8, height: 8, decoration: BoxDecoration(shape: BoxShape.circle, color: color)),
-                const SizedBox(width: 6),
-                Text('$label: ${value.toInt()}%', style: const TextStyle(fontWeight: FontWeight.w500)),
-              ],
-            ),
-            Slider(value: value, onChanged: onChanged, min: 0, max: 100, divisions: 20),
-          ],
-        ),
       ),
     );
   }
 
-  /// Individual amount input fields for each user.
-  Widget _individualFields() {
-    return Column(
-      children: [
-        if (_users.isNotEmpty) ...[
-          TextField(
-            controller: _individualAController,
-            decoration: InputDecoration(labelText: '${_users[0].name}\'s amount'),
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
-          ),
-          const SizedBox(height: 12),
-          if (_users.length > 1)
-            TextField(
-              controller: _individualBController,
-              decoration: InputDecoration(labelText: '${_users[1].name}\'s amount'),
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
-            ),
-        ],
-        if (_individualAController.text.isNotEmpty && _individualBController.text.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 12),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                'Total: ${Calculations.currency(_calculateIndividualTotal())}',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
-      ],
-    );
-  }
+  Widget _totalCheck() {
+    final total = double.tryParse(_amountController.text) ?? 0;
+    final sum = _splitData
+        .where((d) => d['included'] as bool)
+        .fold(0.0, (s, d) => s + (double.tryParse((d['controller'] as TextEditingController).text) ?? 0));
+    final ok = (sum - total).abs() < 0.01;
 
-  double _calculateIndividualTotal() {
-    final a = double.tryParse(_individualAController.text) ?? 0;
-    final b = double.tryParse(_individualBController.text) ?? 0;
-    return a + b;
+    if (_amountController.text.isEmpty || sum == 0) return const SizedBox.shrink();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+      decoration: BoxDecoration(
+        color: ok
+            ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.08)
+            : Theme.of(context).colorScheme.error.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        ok ? 'Total: ${Calculations.currency(sum)}' : 'Split total (${Calculations.currency(sum)}) does not match ${Calculations.currency(total)}',
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: ok ? null : Theme.of(context).colorScheme.error,
+        ),
+        textAlign: TextAlign.center,
+      ),
+    );
   }
 
   Future<void> _pickDate() async {
@@ -360,17 +340,31 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     if (picked != null) setState(() => _date = picked);
   }
 
-  /// Validates form, builds expense object, persists it, then navigates back.
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedCategory == null || _paidBy == null) return;
 
     final total = double.parse(_amountController.text);
+    final included = _splitData.where((d) => d['included'] as bool).toList();
+    if (included.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Select at least one participant')),
+      );
+      return;
+    }
 
-    if (_splitMode == SplitMode.individual) {
-      final a = double.tryParse(_individualAController.text) ?? 0;
-      final b = double.tryParse(_individualBController.text) ?? 0;
-      if (a + b != total) {
+    Map<String, double> splits;
+    if (_splitMode == SplitMode.equal) {
+      final share = total / included.length;
+      splits = {for (final d in included) (d['user'] as UserProfile).id!: share};
+    } else {
+      splits = {};
+      for (final d in included) {
+        final amount = double.tryParse((d['controller'] as TextEditingController).text) ?? 0;
+        splits[(d['user'] as UserProfile).id!] = amount;
+      }
+      final sum = splits.values.fold(0.0, (s, v) => s + v);
+      if ((sum - total).abs() > 0.01) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Individual amounts must add up to the total')),
         );
@@ -384,15 +378,13 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       date: _date,
       totalAmount: total,
       splitMode: _splitMode,
-      splitPercentageA: _splitMode == SplitMode.percentage ? _percentageA : null,
-      splitPercentageB: _splitMode == SplitMode.percentage ? _percentageB : null,
-      amountA: _splitMode == SplitMode.individual ? (double.tryParse(_individualAController.text) ?? 0) : null,
-      amountB: _splitMode == SplitMode.individual ? (double.tryParse(_individualBController.text) ?? 0) : null,
       paidById: _paidBy!.id!,
       categoryId: _selectedCategory!.id!,
       isRecurring: _isRecurring,
       recurringInterval: _isRecurring ? 'monthly' : 'none',
       notes: _notesController.text,
+      participantIds: splits.keys.toList(),
+      splits: splits,
     );
 
     if (_isEditing) {
