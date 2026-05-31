@@ -26,6 +26,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   List<UserProfile> _users = [];
   List<Category> _categories = [];
   bool _loading = true;
+  bool _syncing = false;
   SortMode _sortMode = SortMode.dateDesc;
   final _searchCtrl = TextEditingController();
   String _searchQuery = '';
@@ -46,6 +47,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Future<void> _load() async {
+    if (!_loading) setState(() => _syncing = true);
     try {
       final users = await _storage.getUsers();
       final categories = await _storage.getCategories();
@@ -57,9 +59,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
         _categories = categories;
         _expenses = expenses;
         _loading = false;
+        _syncing = false;
       });
     } catch (e) {
-      setState(() => _loading = false);
+      setState(() {
+        _loading = false;
+        _syncing = false;
+      });
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to load: $e')),
@@ -168,7 +174,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final monthText = DateFormat('MMMM yyyy').format(_selectedMonth);
 
     return Scaffold(
-      appBar: AppBar(title: _appTitle(Icons.history, 'History', 'Track all expenses')),
+      appBar: AppBar(
+        title: _appTitle(Icons.history, 'History', 'Track all expenses'),
+        actions: [
+          if (_syncing)
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: SizedBox(
+                width: 20, height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _addExpense(context),
         child: const Icon(Icons.add),

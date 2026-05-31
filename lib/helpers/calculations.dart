@@ -70,13 +70,13 @@ class MonthlySummary {
         userId: debtor.userId,
         userName: debtor.userName,
         paid: debtor.paid,
-        share: debtor.share + amount,
+        share: debtor.share - amount,
       );
       creditors[ci] = UserBalance(
         userId: creditor.userId,
         userName: creditor.userName,
         paid: creditor.paid,
-        share: creditor.share - amount,
+        share: creditor.share + amount,
       );
       if (debtors[di].balance >= -0.005) di++;
       if (creditors[ci].balance <= 0.005) ci++;

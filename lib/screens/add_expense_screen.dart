@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -248,12 +249,36 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                 maxLines: 2,
               ),
               const SizedBox(height: 12),
-              TextFormField(
-                controller: _receiptUrlController,
-                decoration: const InputDecoration(
-                  labelText: 'Receipt URL (optional)',
-                  prefixIcon: Icon(Icons.image_outlined),
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _receiptUrlController,
+                      decoration: const InputDecoration(
+                        labelText: 'Receipt URL (optional)',
+                        prefixIcon: Icon(Icons.image_outlined),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.upload_file),
+                    tooltip: 'Upload receipt image',
+                    onPressed: () {
+                      final input = html.FileUploadInputElement()..accept = 'image/*';
+                      input.click();
+                      input.onChange.listen((_) {
+                        final file = input.files?.first;
+                        if (file == null) return;
+                        final reader = html.FileReader();
+                        reader.readAsDataUrl(file);
+                        reader.onLoadEnd.listen((__) {
+                          _receiptUrlController.text = reader.result as String;
+                        });
+                      });
+                    },
+                  ),
+                ],
               ),
             ]),
           ],

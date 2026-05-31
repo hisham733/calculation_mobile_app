@@ -23,6 +23,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<Category> _categories = [];
   List<Expense> _expenses = [];
   bool _loading = true;
+  bool _syncing = false;
   DateTime? _settledAt;
   final _searchCtrl = TextEditingController();
   String _searchQuery = '';
@@ -33,6 +34,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _load();
   }
 
+  void _onTabResumed() {
+    _load();
+  }
+
   @override
   void dispose() {
     _searchCtrl.dispose();
@@ -40,6 +45,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _load() async {
+    if (!_loading) setState(() => _syncing = true);
     try {
       final users = await _storage.getUsers();
       final categories = await _storage.getCategories();
@@ -54,9 +60,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _expenses = expenses;
         _settledAt = settledTs != null ? DateTime.fromMillisecondsSinceEpoch(settledTs) : null;
         _loading = false;
+        _syncing = false;
       });
     } catch (e) {
-      setState(() => _loading = false);
+      setState(() {
+        _loading = false;
+        _syncing = false;
+      });
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to load: $e')),
@@ -102,7 +112,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
 
     return Scaffold(
-      appBar: AppBar(title: _appTitle(Icons.dashboard_rounded, 'Dashboard', 'Monthly overview')),
+      appBar: AppBar(
+        title: _appTitle(Icons.dashboard_rounded, 'Dashboard', 'Monthly overview'),
+        actions: [
+          if (_syncing)
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: SizedBox(
+                width: 20, height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _addExpense(context),
         icon: const Icon(Icons.add),

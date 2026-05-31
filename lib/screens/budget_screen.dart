@@ -23,6 +23,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
   List<Expense> _lastMonthExpenses = [];
   List<double> _monthlyTotals = [];
   bool _loading = true;
+  bool _syncing = false;
   bool _budgetRollover = true;
 
   @override
@@ -32,29 +33,43 @@ class _BudgetScreenState extends State<BudgetScreen> {
   }
 
   Future<void> _load() async {
-    final categories = await _storage.getCategories();
-    final now = DateTime.now();
-    final currentExpenses = await _storage.getExpensesForMonth(now);
-    final lastMonth = DateTime(now.year, now.month - 1, 1);
-    final lastExpenses = await _storage.getExpensesForMonth(lastMonth);
-    final prefs = await SharedPreferences.getInstance();
-    final rollover = prefs.getBool(kBudgetRollover) ?? true;
+    if (!_loading) setState(() => _syncing = true);
+    try {
+      final categories = await _storage.getCategories();
+      final now = DateTime.now();
+      final currentExpenses = await _storage.getExpensesForMonth(now);
+      final lastMonth = DateTime(now.year, now.month - 1, 1);
+      final lastExpenses = await _storage.getExpensesForMonth(lastMonth);
+      final prefs = await SharedPreferences.getInstance();
+      final rollover = prefs.getBool(kBudgetRollover) ?? true;
 
-    final monthlyTotals = <double>[];
-    for (int i = 5; i >= 0; i--) {
-      final m = DateTime(now.year, now.month - i, 1);
-      final exps = await _storage.getExpensesForMonth(m);
-      monthlyTotals.add(exps.fold(0.0, (s, e) => s + e.totalAmount));
+      final monthlyTotals = <double>[];
+      for (int i = 5; i >= 0; i--) {
+        final m = DateTime(now.year, now.month - i, 1);
+        final exps = await _storage.getExpensesForMonth(m);
+        monthlyTotals.add(exps.fold(0.0, (s, e) => s + e.totalAmount));
+      }
+
+      setState(() {
+        _categories = categories;
+        _currentExpenses = currentExpenses;
+        _lastMonthExpenses = lastExpenses;
+        _monthlyTotals = monthlyTotals;
+        _budgetRollover = rollover;
+        _loading = false;
+        _syncing = false;
+      });
+    } catch (e) {
+      setState(() {
+        _loading = false;
+        _syncing = false;
+      });
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load: $e')),
+        );
+      }
     }
-
-    setState(() {
-      _categories = categories;
-      _currentExpenses = currentExpenses;
-      _lastMonthExpenses = lastExpenses;
-      _monthlyTotals = monthlyTotals;
-      _budgetRollover = rollover;
-      _loading = false;
-    });
   }
 
   /// Computes unused budget from last month that rolls over to current month.
@@ -78,7 +93,19 @@ class _BudgetScreenState extends State<BudgetScreen> {
     final total = _currentExpenses.fold(0.0, (s, e) => s + e.totalAmount);
 
     return Scaffold(
-      appBar: AppBar(title: _appTitle(Icons.pie_chart, 'Budget', 'Spending by category')),
+      appBar: AppBar(
+        title: _appTitle(Icons.pie_chart, 'Budget', 'Spending by category'),
+        actions: [
+          if (_syncing)
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: SizedBox(
+                width: 20, height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+        ],
+      ),
       body: _currentExpenses.isEmpty
           ? Center(
               child: Column(
