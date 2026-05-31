@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_profile.dart';
 import '../models/category.dart';
+import '../models/expense.dart';
 import '../services/storage_provider.dart';
 import '../helpers/calculations.dart';
 import '../main.dart';
@@ -37,6 +38,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _storage = createStorage();
   List<UserProfile> _users = [];
   List<Category> _categories = [];
+  List<Expense> _recurringExps = [];
   bool _loading = true;
   bool _budgetRollover = true;
 
@@ -49,11 +51,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _load() async {
     final users = await _storage.getUsers();
     final categories = await _storage.getCategories();
+    final all = await _storage.getAllExpenses();
+    final recurringExps = all.where((e) => e.isRecurring).toList();
     final prefs = await SharedPreferences.getInstance();
     final rollover = prefs.getBool(kBudgetRollover) ?? true;
     setState(() {
       _users = users;
       _categories = categories;
+      _recurringExps = recurringExps;
       _budgetRollover = rollover;
       _loading = false;
     });
@@ -75,6 +80,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _categoriesSection(),
           _appearanceSection(appState),
           _budgetSection(),
+          _recurringSection(),
           _actionsSection(),
         ],
       ),
@@ -122,6 +128,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
         const Divider(),
       ],
     );
+  }
+
+  Widget _recurringSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionHeader('Recurring Expenses'),
+        if (_recurringExps.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text('No recurring expenses',
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13)),
+          )
+        else
+          ..._recurringExps.map((e) => ListTile(
+                leading: const Icon(Icons.repeat, size: 20),
+                title: Text(e.description),
+                subtitle: Text(DateFormat('MMM d').format(e.date)),
+                trailing: IconButton(
+                  icon: const Icon(Icons.stop_outlined, size: 20),
+                  tooltip: 'Stop recurring',
+                  onPressed: () => _stopRecurring(e),
+                ),
+              )),
+        const Divider(),
+      ],
+    );
+  }
+
+  void _stopRecurring(Expense expense) {
+    expense.isRecurring = false;
+    expense.recurringInterval = 'none';
+    _storage.updateExpense(expense);
+    _load();
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${expense.description} will no longer repeat')),
+      );
+    }
   }
 
   Widget _usersSection() {
