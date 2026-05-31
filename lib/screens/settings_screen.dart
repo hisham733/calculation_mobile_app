@@ -1,4 +1,8 @@
+import 'dart:convert';
+import 'dart:html' as html;
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_profile.dart';
 import '../models/category.dart';
@@ -325,6 +329,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       children: [
         const Divider(),
         ListTile(
+          leading: const Icon(Icons.file_download_outlined),
+          title: const Text('Export CSV'),
+          onTap: _exportCsv,
+        ),
+        ListTile(
           leading: const Icon(Icons.delete_forever, color: Colors.red),
           title: const Text('Reset All Data', style: TextStyle(color: Colors.red)),
           onTap: () {
@@ -350,6 +359,41 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ],
     );
+  }
+
+  Future<void> _exportCsv() async {
+    final expenses = await _storage.getAllExpenses();
+    final users = await _storage.getUsers();
+    final categories = await _storage.getCategories();
+
+    final buf = StringBuffer();
+    buf.writeln('Date,Description,Category,Total,Paid By,Participants,Split Notes');
+    for (final e in expenses) {
+      final cat = categories.where((c) => c.id == e.categoryId).firstOrNull?.name ?? '';
+      final payer = users.where((u) => u.id == e.paidById).firstOrNull?.name ?? '';
+      final parts = e.participantIds.map((pid) {
+        final uname = users.where((u) => u.id == pid).firstOrNull?.name ?? pid;
+        return '$uname: ${Calculations.currency(e.shareFor(pid))}';
+      }).join('; ');
+      final date = DateFormat('yyyy-MM-dd').format(e.date);
+      final notes = e.notes.replaceAll('"', '""');
+      buf.writeln('$date,"${e.description}","$cat",${Calculations.currency(e.totalAmount)},"$payer","$parts","$notes"');
+    }
+
+    final csv = buf.toString();
+    final bytes = Uint8List.fromList(utf8.encode(csv));
+    final blob = html.Blob([bytes], 'text/csv');
+    final url = html.Url.createObjectUrlFromBlob(blob);
+    final a = html.AnchorElement(href: url)
+      ..setAttribute('download', 'expenses_export.csv')
+      ..click();
+    html.Url.revokeObjectUrl(url);
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('CSV exported')),
+      );
+    }
   }
 
   Widget _sectionHeader(String title) {
