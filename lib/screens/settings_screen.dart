@@ -23,6 +23,12 @@ const _iconChoices = [
   0xe6de, 0xe8ba, 0xe8d0, 0xe355, 0xe555, 0xe549,
 ];
 
+const _catColors = [
+  0xFF006D77, 0xFFFF8C42, 0xFF2D6A4F, 0xFF4A6FA5, 0xFFD4A373,
+  0xFF6B9080, 0xFFE29578, 0xFF83C5BE, 0xFFA0522D, 0xFF5D7A9E,
+  0xFFB8860B, 0xFFC44536, 0xFF2E86AB, 0xFFF18F01, 0xFFA23B72,
+];
+
 class _SettingsScreenState extends State<SettingsScreen> {
   final _storage = createStorage();
   List<UserProfile> _users = [];
@@ -156,7 +162,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _categoryTile(Category category) {
     return ListTile(
-      leading: Icon(IconData(category.iconCodePoint, fontFamily: 'MaterialIcons'), color: Theme.of(context).colorScheme.primary),
+      leading: CircleAvatar(
+        radius: 14,
+        backgroundColor: Color(category.colorValue),
+        child: Icon(IconData(category.iconCodePoint, fontFamily: 'MaterialIcons'),
+            size: 16, color: Colors.white),
+      ),
       title: Text(category.name),
       subtitle: category.monthlyBudget != null && category.monthlyBudget! > 0
           ? Text('Budget: ${Calculations.currency(category.monthlyBudget!)}')
@@ -227,11 +238,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  /// Opens a dialog to add a new category with name, budget, and icon picker.
+  /// Opens a dialog to add a new category with name, budget, icon, and color picker.
   void _addCategory() {
     final nameCtrl = TextEditingController();
     final budgetCtrl = TextEditingController();
     int selectedIcon = _iconChoices[0];
+    int selectedColor = _catColors[0];
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -255,6 +267,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const Text('Icon', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
               const SizedBox(height: 8),
               _iconGrid(selectedIcon, (icon) => setDialogState(() => selectedIcon = icon)),
+              const SizedBox(height: 16),
+              const Text('Color', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+              const SizedBox(height: 8),
+              _colorGrid(selectedColor, (c) => setDialogState(() => selectedColor = c)),
             ],
           ),
           actions: [
@@ -266,6 +282,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     name: nameCtrl.text,
                     monthlyBudget: double.tryParse(budgetCtrl.text),
                     iconCodePoint: selectedIcon,
+                    colorValue: selectedColor,
                   ));
                   _load();
                   Navigator.pop(ctx);
@@ -279,13 +296,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  /// Opens a dialog to edit an existing category's name, budget, and icon.
+  /// Opens a dialog to edit an existing category's name, budget, icon, and color.
   void _editCategory(Category category) {
     final nameCtrl = TextEditingController(text: category.name);
     final budgetCtrl = TextEditingController(
       text: category.monthlyBudget?.toStringAsFixed(0) ?? '',
     );
     int selectedIcon = category.iconCodePoint;
+    int selectedColor = category.colorValue;
 
     showDialog(
       context: context,
@@ -309,6 +327,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const Text('Icon', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
               const SizedBox(height: 8),
               _iconGrid(selectedIcon, (icon) => setDialogState(() => selectedIcon = icon)),
+              const SizedBox(height: 16),
+              const Text('Color', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+              const SizedBox(height: 8),
+              _colorGrid(selectedColor, (c) => setDialogState(() => selectedColor = c)),
             ],
           ),
           actions: [
@@ -318,6 +340,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 category.name = nameCtrl.text;
                 category.monthlyBudget = double.tryParse(budgetCtrl.text);
                 category.iconCodePoint = selectedIcon;
+                category.colorValue = selectedColor;
                 _storage.updateCategory(category);
                 _load();
                 Navigator.pop(ctx);
@@ -360,6 +383,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  /// Grid of selectable colors for category color picker.
+  Widget _colorGrid(int selected, ValueChanged<int> onSelected) {
+    return SizedBox(
+      height: 50,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: _catColors.map((c) {
+          final isSelected = c == selected;
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: GestureDetector(
+              onTap: () => onSelected(c),
+              child: Container(
+                width: 40, height: 40,
+                decoration: BoxDecoration(
+                  color: Color(c),
+                  shape: BoxShape.circle,
+                  border: isSelected ? Border.all(color: Theme.of(context).colorScheme.onSurface, width: 3) : null,
+                ),
+                child: isSelected
+                    ? Icon(Icons.check, color: Colors.white, size: 20)
+                    : null,
+              ),
+            ),
+          );
+        }).toList(),
       ),
     );
   }

@@ -17,7 +17,7 @@ class StorageServiceMobile implements StorageService {
     final path = join(dbPath, 'shared_expense.db');
     _db = await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE users (
@@ -31,6 +31,7 @@ class StorageServiceMobile implements StorageService {
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
             icon_code_point INTEGER NOT NULL,
+            color_value INTEGER NOT NULL DEFAULT 0xFF006D77,
             monthly_budget REAL
           )
         ''');
@@ -60,6 +61,9 @@ class StorageServiceMobile implements StorageService {
         if (oldVersion < 2) {
           await db.execute("ALTER TABLE expenses ADD COLUMN notes TEXT NOT NULL DEFAULT ''");
         }
+        if (oldVersion < 3) {
+          await db.execute("ALTER TABLE categories ADD COLUMN color_value INTEGER NOT NULL DEFAULT 0xFF006D77");
+        }
       },
     );
   }
@@ -71,12 +75,12 @@ class StorageServiceMobile implements StorageService {
     await db.insert('users', {'id': 'user_b', 'name': 'User B', 'color_value': 0xFFFF9500});
 
     final categories = [
-      {'id': 'cat_1', 'name': 'Groceries', 'icon_code_point': 0xe8cc, 'monthly_budget': 800.0},
-      {'id': 'cat_2', 'name': 'Dining', 'icon_code_point': 0xe56c, 'monthly_budget': 400.0},
-      {'id': 'cat_3', 'name': 'Utilities', 'icon_code_point': 0xe3b3, 'monthly_budget': 200.0},
-      {'id': 'cat_4', 'name': 'Transport', 'icon_code_point': 0xe530, 'monthly_budget': 150.0},
-      {'id': 'cat_5', 'name': 'Entertainment', 'icon_code_point': 0xe404, 'monthly_budget': 200.0},
-      {'id': 'cat_6', 'name': 'Other', 'icon_code_point': 0xe3e9, 'monthly_budget': null},
+      {'id': 'cat_1', 'name': 'Groceries', 'icon_code_point': 0xe8cc, 'color_value': 0xFF2D6A4F, 'monthly_budget': 800.0},
+      {'id': 'cat_2', 'name': 'Dining', 'icon_code_point': 0xe56c, 'color_value': 0xFFFF8C42, 'monthly_budget': 400.0},
+      {'id': 'cat_3', 'name': 'Utilities', 'icon_code_point': 0xe3b3, 'color_value': 0xFF006D77, 'monthly_budget': 200.0},
+      {'id': 'cat_4', 'name': 'Transport', 'icon_code_point': 0xe530, 'color_value': 0xFF4A6FA5, 'monthly_budget': 150.0},
+      {'id': 'cat_5', 'name': 'Entertainment', 'icon_code_point': 0xe404, 'color_value': 0xFFD4A373, 'monthly_budget': 200.0},
+      {'id': 'cat_6', 'name': 'Other', 'icon_code_point': 0xe3e9, 'color_value': 0xFF6B9080, 'monthly_budget': null},
     ];
     for (final cat in categories) {
       await db.insert('categories', cat);

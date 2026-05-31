@@ -359,9 +359,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Color _colorForCategory(String name) {
-    final cs = Theme.of(context).colorScheme;
-    final colors = [cs.primary, cs.secondary, cs.tertiary, cs.primary.withValues(alpha: 0.6), cs.secondary.withValues(alpha: 0.6)];
-    return colors[name.hashCode % colors.length];
+    final cat = _categories.where((c) => c.name == name).firstOrNull;
+    return Color(cat?.colorValue ?? 0xFF006D77);
   }
 
   Widget _appTitle(IconData icon, String title, String subtitle) {
