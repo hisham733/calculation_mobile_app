@@ -66,13 +66,13 @@ class _BudgetScreenState extends State<BudgetScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.pie_chart_outline, size: 64, color: Colors.grey[400]),
+                  Icon(Icons.pie_chart_outline, size: 64, color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.4)),
                   const SizedBox(height: 16),
                   Text('No expenses yet',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.grey[600])),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                   const SizedBox(height: 8),
                   Text('Add expenses to see budget breakdown',
-                      style: TextStyle(color: Colors.grey[500])),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                 ],
               ),
             )
@@ -93,9 +93,9 @@ class _BudgetScreenState extends State<BudgetScreen> {
   /// Pie chart showing spending distribution across categories with active expenses.
   Widget _pieChart(Map<String?, double> spending, double total) {
     final colors = [
-      const Color(0xFF2C3E50), const Color(0xFFC9A94E), const Color(0xFF8B6F47),
-      const Color(0xFF5D7A9E), const Color(0xFFA0522D), const Color(0xFF6B8E6B),
-      const Color(0xFFB8860B), const Color(0xFF4A6FA5),
+      const Color(0xFF006D77), const Color(0xFFFF8C42), const Color(0xFF2D6A4F),
+      const Color(0xFF83C5BE), const Color(0xFFE29578), const Color(0xFF6B9080),
+      const Color(0xFFD4A373), const Color(0xFF4A6FA5),
     ];
 
     final visible = _categories.where((c) => (spending[c.id] ?? 0) > 0).toList();
@@ -144,6 +144,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
 
   /// Budget progress bar with rollover, color-coded by usage level.
   Widget _budgetTile(Category category, double spent) {
+    final cs = Theme.of(context).colorScheme;
     final budget = category.monthlyBudget ?? 0;
     final hasBudget = budget > 0;
     final rollover = _rollover(category);
@@ -160,7 +161,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
           children: [
             Row(
               children: [
-                Icon(IconData(category.iconCodePoint, fontFamily: 'MaterialIcons'), color: Theme.of(context).colorScheme.primary),
+                Icon(IconData(category.iconCodePoint, fontFamily: 'MaterialIcons'), color: cs.primary),
                 const SizedBox(width: 8),
                 Expanded(child: Text(category.name, style: const TextStyle(fontWeight: FontWeight.w600))),
                 if (hasBudget)
@@ -174,14 +175,14 @@ class _BudgetScreenState extends State<BudgetScreen> {
                           children: [
                             TextSpan(
                               text: ' / ${Calculations.currency(available)}',
-                              style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
                             ),
                           ],
                         ),
                       ),
                       if (rollover > 0)
                         Text('+${Calculations.currency(rollover)} rolled over',
-                            style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+                            style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
                     ],
                   )
                 else
@@ -195,9 +196,9 @@ class _BudgetScreenState extends State<BudgetScreen> {
                 child: LinearProgressIndicator(
                   value: ratio,
                   minHeight: 8,
-                  backgroundColor: Colors.grey[300],
+                  backgroundColor: cs.surfaceContainerHighest,
                   valueColor: AlwaysStoppedAnimation(
-                    ratio > 0.9 ? Colors.red : ratio > 0.7 ? Colors.orange : Colors.green,
+                    ratio > 0.9 ? const Color(0xFFD32F2F) : ratio > 0.7 ? const Color(0xFFFF8C42) : const Color(0xFF2D6A4F),
                   ),
                 ),
               ),
@@ -205,14 +206,14 @@ class _BudgetScreenState extends State<BudgetScreen> {
               Row(
                 children: [
                   Text('${(ratio * 100).toInt()}% used',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                      style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
                   const Spacer(),
                   if (remaining > 0)
                     Text('${Calculations.currency(remaining)} remaining',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]))
+                        style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant))
                   else
-                    const Text('Over budget!',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.red)),
+                    Text('Over budget!',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: cs.error)),
                 ],
               ),
             ],

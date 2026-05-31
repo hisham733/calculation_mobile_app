@@ -138,7 +138,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                         value: c,
                         child: Row(
                           children: [
-                            Icon(IconData(c.iconCodePoint, fontFamily: 'MaterialIcons'), size: 18, color: Colors.grey[600]),
+                            Icon(IconData(c.iconCodePoint, fontFamily: 'MaterialIcons'), size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
                             const SizedBox(width: 8),
                             Text(c.name),
                           ],

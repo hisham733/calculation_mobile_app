@@ -58,53 +58,50 @@ class SharedExpenseAppState extends State<SharedExpenseApp> {
 
   @override
   Widget build(BuildContext context) {
-    const cardShape = RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12)));
-    const tileShape = RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12)));
-
     final lightScheme = ColorScheme(
       brightness: Brightness.light,
-      primary: const Color(0xFF2C3E50),
+      primary: const Color(0xFF006D77),
       onPrimary: Colors.white,
-      secondary: const Color(0xFFC9A94E),
-      onSecondary: const Color(0xFF2C1810),
-      tertiary: const Color(0xFF8B6F47),
+      secondary: const Color(0xFFFF8C42),
+      onSecondary: Colors.white,
+      tertiary: const Color(0xFF2D6A4F),
       onTertiary: Colors.white,
-      error: const Color(0xFF8B0000),
+      error: const Color(0xFFBA1A1A),
       onError: Colors.white,
-      surface: const Color(0xFFFAF6F0),
-      onSurface: const Color(0xFF2C1810),
-      surfaceContainerHighest: const Color(0xFFF0E8DC),
-      onSurfaceVariant: const Color(0xFF5C5346),
-      outline: const Color(0xFFC9C0B3),
-      outlineVariant: const Color(0xFFE0D8CC),
-      inverseSurface: const Color(0xFF2C1810),
-      onInverseSurface: const Color(0xFFFAF6F0),
-      inversePrimary: const Color(0xFF8DB4D6),
-      shadow: const Color(0xFF2C1810),
-      scrim: const Color(0xFF2C1810),
+      surface: const Color(0xFFFFFCFA),
+      onSurface: const Color(0xFF1B1B1F),
+      surfaceContainerHighest: const Color(0xFFF2EFE9),
+      onSurfaceVariant: const Color(0xFF4A4A4E),
+      outline: const Color(0xFF737376),
+      outlineVariant: const Color(0xFFC5C3BE),
+      inverseSurface: const Color(0xFF303034),
+      onInverseSurface: const Color(0xFFF2F0F4),
+      inversePrimary: const Color(0xFF8BD4D0),
+      shadow: const Color(0xFF000000),
+      scrim: const Color(0xFF000000),
     );
 
     final darkScheme = ColorScheme(
       brightness: Brightness.dark,
-      primary: const Color(0xFF5D7A9E),
-      onPrimary: Colors.white,
-      secondary: const Color(0xFFD4B86A),
-      onSecondary: const Color(0xFF2C1810),
-      tertiary: const Color(0xFFC4956A),
-      onTertiary: const Color(0xFF2C1810),
-      error: const Color(0xFFD32F2F),
-      onError: Colors.white,
-      surface: const Color(0xFF1A1A1E),
-      onSurface: const Color(0xFFE8E0D8),
-      surfaceContainerHighest: const Color(0xFF2C2C30),
-      onSurfaceVariant: const Color(0xFFB0A89C),
-      outline: const Color(0xFF5C5346),
-      outlineVariant: const Color(0xFF3C3428),
-      inverseSurface: const Color(0xFFFAF6F0),
-      onInverseSurface: const Color(0xFF2C1810),
-      inversePrimary: const Color(0xFF2C3E50),
-      shadow: Colors.black,
-      scrim: Colors.black,
+      primary: const Color(0xFF83C5BE),
+      onPrimary: const Color(0xFF00373D),
+      secondary: const Color(0xFFFFB07C),
+      onSecondary: const Color(0xFF4A1C00),
+      tertiary: const Color(0xFF52B788),
+      onTertiary: const Color(0xFF003821),
+      error: const Color(0xFFFFB4AB),
+      onError: const Color(0xFF690005),
+      surface: const Color(0xFF1B1B1F),
+      onSurface: const Color(0xFFE5E1E5),
+      surfaceContainerHighest: const Color(0xFF2B2B2F),
+      onSurfaceVariant: const Color(0xFFC5C3BE),
+      outline: const Color(0xFF8F8D91),
+      outlineVariant: const Color(0xFF454549),
+      inverseSurface: const Color(0xFFE5E1E5),
+      onInverseSurface: const Color(0xFF1B1B1F),
+      inversePrimary: const Color(0xFF006D77),
+      shadow: const Color(0xFF000000),
+      scrim: const Color(0xFF000000),
     );
 
     ThemeData buildTheme(ColorScheme scheme) {
@@ -114,41 +111,157 @@ class SharedExpenseAppState extends State<SharedExpenseApp> {
         colorScheme: scheme,
         scaffoldBackgroundColor: scheme.surface,
         cardTheme: CardThemeData(
-          elevation: 0,
+          elevation: 1.5,
+          shadowColor: isDark ? Colors.black : scheme.primary.withValues(alpha: 0.12),
           color: scheme.surface,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: scheme.outlineVariant, width: 1),
+            borderRadius: BorderRadius.circular(16),
           ),
           clipBehavior: Clip.antiAlias,
-          margin: const EdgeInsets.only(bottom: 8),
+          margin: const EdgeInsets.only(bottom: 10),
         ),
         appBarTheme: AppBarTheme(
           centerTitle: true,
           elevation: 0,
-          scrolledUnderElevation: 0,
+          scrolledUnderElevation: 1,
           backgroundColor: scheme.surface,
           foregroundColor: scheme.onSurface,
           surfaceTintColor: Colors.transparent,
         ),
         navigationBarTheme: NavigationBarThemeData(
-          elevation: 0,
+          elevation: 2,
           backgroundColor: scheme.surface,
-          indicatorColor: scheme.primary.withValues(alpha: 0.12),
-          indicatorShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          indicatorColor: scheme.primary,
+          indicatorShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
           labelTextStyle: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.selected)) {
-              return TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: scheme.primary);
+              return TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: scheme.onPrimary);
             }
             return TextStyle(fontSize: 12, color: scheme.onSurfaceVariant);
           }),
           iconTheme: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.selected)) {
-              return IconThemeData(size: 22, color: scheme.primary);
+              return IconThemeData(size: 22, color: scheme.onPrimary);
             }
             return IconThemeData(size: 22, color: scheme.onSurfaceVariant);
           }),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: scheme.primary, width: 2),
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          labelStyle: TextStyle(color: scheme.onSurfaceVariant),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: scheme.primary,
+            foregroundColor: scheme.onPrimary,
+            elevation: 0,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          ),
+        ),
+        filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(
+            backgroundColor: scheme.primary,
+            foregroundColor: scheme.onPrimary,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          ),
+        ),
+        textButtonTheme: TextButtonThemeData(
+          style: TextButton.styleFrom(
+            foregroundColor: scheme.primary,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: scheme.primary,
+            side: BorderSide(color: scheme.primary.withValues(alpha: 0.4)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          ),
+        ),
+        floatingActionButtonTheme: FloatingActionButtonThemeData(
+          backgroundColor: scheme.primary,
+          foregroundColor: scheme.onPrimary,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          elevation: 3,
+        ),
+        dialogTheme: DialogThemeData(
+          backgroundColor: scheme.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          surfaceTintColor: Colors.transparent,
+        ),
+        bottomSheetTheme: BottomSheetThemeData(
+          backgroundColor: scheme.surface,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          surfaceTintColor: Colors.transparent,
+        ),
+        chipTheme: ChipThemeData(
+          backgroundColor: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+          selectedColor: scheme.primary.withValues(alpha: 0.15),
+          labelStyle: TextStyle(color: scheme.onSurface, fontSize: 13),
+          secondaryLabelStyle: TextStyle(color: scheme.primary, fontSize: 13),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.3)),
+          ),
+        ),
+        dividerTheme: DividerThemeData(
+          space: 1,
+          thickness: 1,
+          color: scheme.outlineVariant.withValues(alpha: 0.4),
+        ),
+        segmentedButtonTheme: SegmentedButtonThemeData(
+          style: SegmentedButton.styleFrom(
+            backgroundColor: scheme.surface,
+            selectedBackgroundColor: scheme.primary,
+            selectedForegroundColor: scheme.onPrimary,
+            foregroundColor: scheme.onSurface,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+        snackBarTheme: SnackBarThemeData(
+          backgroundColor: scheme.inverseSurface,
+          contentTextStyle: TextStyle(color: scheme.onInverseSurface),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+        switchTheme: SwitchThemeData(
+          thumbColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) return scheme.primary;
+            return scheme.onSurfaceVariant;
+          }),
+          trackColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) return scheme.primary.withValues(alpha: 0.5);
+            return scheme.outlineVariant;
+          }),
+        ),
+        sliderTheme: SliderThemeData(
+          activeTrackColor: scheme.primary,
+          inactiveTrackColor: scheme.outlineVariant,
+          thumbColor: scheme.primary,
+          overlayColor: scheme.primary.withValues(alpha: 0.12),
+          valueIndicatorColor: scheme.primary,
+          valueIndicatorTextStyle: TextStyle(color: scheme.onPrimary),
         ),
       );
     }

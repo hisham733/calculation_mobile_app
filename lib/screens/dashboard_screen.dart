@@ -141,17 +141,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _emptyState() {
+    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 48),
       child: Center(
         child: Column(
           children: [
-            Icon(Icons.receipt_long_outlined, size: 64, color: Colors.grey[400]),
+            Icon(Icons.receipt_long_outlined, size: 64, color: cs.onSurfaceVariant.withValues(alpha: 0.4)),
             const SizedBox(height: 16),
             Text(_searchQuery.isNotEmpty
                 ? 'No matching expenses'
                 : 'No expenses this month',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.grey[600])),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(color: cs.onSurfaceVariant)),
             if (_searchQuery.isEmpty) ...[
               const SizedBox(height: 12),
               FilledButton.tonalIcon(
@@ -218,7 +219,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _labelValue('Paid', Calculations.currency(paid), cs),
-                Container(width: 1, height: 30, color: Colors.grey.shade300),
+                Container(width: 1, height: 30, color: cs.outlineVariant),
                 _labelValue('Share', Calculations.currency(share), cs),
               ],
             ),
@@ -243,25 +244,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final balanced = summary.balanceA == 0;
     final cs = Theme.of(context).colorScheme;
 
-    Color bgColor, iconColor, textColor;
+    Color bgColor, iconColor;
     IconData icon;
     String text;
     if (settled) {
       bgColor = cs.primary.withValues(alpha: 0.08);
       iconColor = cs.primary;
-      textColor = cs.primary;
       icon = Icons.check_circle_outline;
       text = 'All settled this month';
     } else if (balanced) {
-      bgColor = cs.secondary.withValues(alpha: 0.08);
-      iconColor = cs.secondary;
-      textColor = cs.secondary;
+      bgColor = cs.tertiary.withValues(alpha: 0.08);
+      iconColor = cs.tertiary;
       icon = Icons.balance;
       text = 'Balanced \u2014 nothing to settle';
     } else {
-      bgColor = const Color(0xFFC9A94E).withValues(alpha: 0.1);
-      iconColor = const Color(0xFFC9A94E);
-      textColor = const Color(0xFFC9A94E);
+      bgColor = cs.secondary.withValues(alpha: 0.08);
+      iconColor = cs.secondary;
       icon = Icons.swap_horiz;
       text = summary.settlementText(_users[0].name, _users[1].name);
     }
@@ -314,7 +312,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           alignment: Alignment.centerRight,
           padding: const EdgeInsets.only(right: 20),
           decoration: BoxDecoration(
-            color: Colors.red.shade400,
+            color: cs.error,
             borderRadius: BorderRadius.circular(16),
           ),
           child: const Icon(Icons.delete, color: Colors.white),
@@ -370,7 +368,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               width: 40, height: 4,
               margin: const EdgeInsets.only(top: 12, bottom: 8),
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: cs.outlineVariant,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),

@@ -164,7 +164,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               child: Row(
                 children: [
                   Text('${_filtered.length} expense${_filtered.length == 1 ? '' : 's'}',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                      style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                   const Spacer(),
                   DropdownButton<SortMode>(
                     value: _sortMode,
@@ -192,13 +192,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 child: Center(
                   child: Column(
                     children: [
-                      Icon(Icons.receipt_long_outlined, size: 48, color: Colors.grey[400]),
+                      Icon(Icons.receipt_long_outlined, size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.4)),
                       const SizedBox(height: 12),
                       Text(
                         _searchQuery.isNotEmpty || _selectedCategoryId != null
                             ? 'No matching expenses'
                             : 'No expenses',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.grey[600]),
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                       ),
                     ],
                   ),
@@ -292,7 +292,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           alignment: Alignment.centerRight,
           padding: const EdgeInsets.only(right: 20),
           decoration: BoxDecoration(
-            color: Colors.red.shade400,
+            color: Theme.of(context).colorScheme.error,
             borderRadius: BorderRadius.circular(16),
           ),
           child: const Icon(Icons.delete, color: Colors.white),
