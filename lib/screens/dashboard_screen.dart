@@ -14,10 +14,10 @@ class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
+  State<DashboardScreen> createState() => DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class DashboardScreenState extends State<DashboardScreen> {
   final _storage = createStorage();
   List<UserProfile> _users = [];
   List<Category> _categories = [];
@@ -31,11 +31,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    _load();
-  }
-
-  void _onTabResumed() {
-    _load();
+    load();
   }
 
   @override
@@ -44,7 +40,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.dispose();
   }
 
-  Future<void> _load() async {
+  Future<void> load() async {
     if (!_loading) setState(() => _syncing = true);
     try {
       final users = await _storage.getUsers();
@@ -132,7 +128,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       body: RefreshIndicator(
-        onRefresh: _load,
+        onRefresh: load,
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
           children: [
@@ -522,7 +518,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         onDismissed: (_) async {
           try {
             await _storage.deleteExpense(expense.id!);
-            _load();
+            load();
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -531,7 +527,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   action: SnackBarAction(label: 'Undo', onPressed: () async {
                     try {
                       await _storage.insertExpense(expense);
-                      _load();
+                      load();
                     } catch (_) {}
                   }),
                 ),
@@ -801,7 +797,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _addExpense(BuildContext context) async {
     await Navigator.push(context, MaterialPageRoute(builder: (_) => const AddExpenseScreen()));
-    _load();
+    load();
   }
 
   Future<void> _editExpense(BuildContext context, Expense expense) async {
@@ -809,6 +805,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       context,
       MaterialPageRoute(builder: (_) => AddExpenseScreen(existingExpense: expense)),
     );
-    _load();
+    load();
   }
 }

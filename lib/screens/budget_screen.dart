@@ -13,10 +13,10 @@ class BudgetScreen extends StatefulWidget {
   const BudgetScreen({super.key});
 
   @override
-  State<BudgetScreen> createState() => _BudgetScreenState();
+  State<BudgetScreen> createState() => BudgetScreenState();
 }
 
-class _BudgetScreenState extends State<BudgetScreen> {
+class BudgetScreenState extends State<BudgetScreen> {
   final _storage = createStorage();
   List<Category> _categories = [];
   List<Expense> _currentExpenses = [];
@@ -29,10 +29,10 @@ class _BudgetScreenState extends State<BudgetScreen> {
   @override
   void initState() {
     super.initState();
-    _load();
+    load();
   }
 
-  Future<void> _load() async {
+  Future<void> load() async {
     if (!_loading) setState(() => _syncing = true);
     try {
       final categories = await _storage.getCategories();
@@ -122,7 +122,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
               ),
             )
           : RefreshIndicator(
-              onRefresh: _load,
+               onRefresh: load,
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [

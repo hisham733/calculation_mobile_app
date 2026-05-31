@@ -15,10 +15,10 @@ class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
 
   @override
-  State<HistoryScreen> createState() => _HistoryScreenState();
+  State<HistoryScreen> createState() => HistoryScreenState();
 }
 
-class _HistoryScreenState extends State<HistoryScreen> {
+class HistoryScreenState extends State<HistoryScreen> {
   final _storage = createStorage();
   DateTime _selectedMonth = DateTime.now();
   String? _selectedCategoryId;
@@ -37,7 +37,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   void initState() {
     super.initState();
-    _load();
+    load();
   }
 
   @override
@@ -46,7 +46,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     super.dispose();
   }
 
-  Future<void> _load() async {
+  Future<void> load() async {
     if (!_loading) setState(() => _syncing = true);
     try {
       final users = await _storage.getUsers();
@@ -78,7 +78,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       _selectedMonth = DateTime(_selectedMonth.year, _selectedMonth.month + delta, 1);
       _loading = true;
     });
-    _load();
+    load();
   }
 
   Future<void> _pickMonth() async {
@@ -95,7 +95,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         _selectedMonth = DateTime(picked.year, picked.month, 1);
         _loading = true;
       });
-      _load();
+      load();
     }
   }
 
@@ -192,7 +192,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         child: const Icon(Icons.add),
       ),
       body: RefreshIndicator(
-        onRefresh: _load,
+        onRefresh: load,
         child: ListView(
           padding: const EdgeInsets.only(bottom: 80),
           children: [
@@ -237,7 +237,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         _dateTo = null;
                         _loading = true;
                       });
-                      _load();
+                      load();
                     },
                   ),
                 ],
@@ -415,7 +415,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         ),
         onDismissed: (_) async {
           await _storage.deleteExpense(expense.id!);
-          _load();
+          load();
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -423,7 +423,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 behavior: SnackBarBehavior.floating,
                 action: SnackBarAction(label: 'Undo', onPressed: () async {
                   _storage.insertExpense(expense);
-                  _load();
+                  load();
                 }),
               ),
             );
@@ -494,11 +494,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
       context,
       MaterialPageRoute(builder: (_) => AddExpenseScreen(existingExpense: expense)),
     );
-    _load();
+    load();
   }
 
   Future<void> _addExpense(BuildContext context) async {
     await Navigator.push(context, MaterialPageRoute(builder: (_) => const AddExpenseScreen()));
-    _load();
+    load();
   }
 }
