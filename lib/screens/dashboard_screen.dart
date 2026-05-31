@@ -308,22 +308,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     Color bgColor, iconColor;
     IconData icon;
-    String text;
+    Widget content;
     if (settled) {
       bgColor = cs.primary.withValues(alpha: 0.08);
       iconColor = cs.primary;
       icon = Icons.check_circle_outline;
-      text = 'All settled this month';
+      content = Text('All settled this month',
+          style: TextStyle(fontWeight: FontWeight.w600, color: cs.onSurface));
     } else if (isBalanced) {
       bgColor = cs.tertiary.withValues(alpha: 0.08);
       iconColor = cs.tertiary;
       icon = Icons.balance;
-      text = 'Balanced \u2014 nothing to settle';
+      content = Text('Balanced \u2014 nothing to settle',
+          style: TextStyle(fontWeight: FontWeight.w600, color: cs.onSurface));
     } else {
       bgColor = cs.secondary.withValues(alpha: 0.08);
       iconColor = cs.secondary;
       icon = Icons.swap_horiz;
-      text = texts.join(', ');
+      content = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: texts.map((t) => Padding(
+          padding: const EdgeInsets.only(bottom: 2),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('\u2022  ', style: TextStyle(color: cs.onSurface, fontSize: 13)),
+              Expanded(child: Text(t, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13))),
+            ],
+          ),
+        )).toList(),
+      );
     }
 
     return Card(
@@ -332,14 +347,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: iconColor, size: 24),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(text,
-                  style: TextStyle(fontWeight: FontWeight.w600, color: cs.onSurface),
-                  textAlign: TextAlign.start),
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Icon(icon, color: iconColor, size: 24),
             ),
+            const SizedBox(width: 12),
+            Expanded(child: content),
             if (!settled && !isBalanced)
               TextButton(
                 onPressed: () async {

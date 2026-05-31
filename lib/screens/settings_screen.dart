@@ -132,20 +132,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: Text(u.name[0].toUpperCase(),
                     style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
               ),
-              title: TextField(
-                controller: TextEditingController(text: u.name),
-                decoration: const InputDecoration(border: InputBorder.none),
-                onSubmitted: (v) {
-                  u.name = v;
-                  _storage.updateUser(u);
-                },
-              ),
-              trailing: _users.length > 2
-                  ? IconButton(
+              title: Text(u.name, style: const TextStyle(fontWeight: FontWeight.w500)),
+              subtitle: const Text('Tap to edit'),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.palette_outlined, size: 20),
+                    onPressed: () => _editUserColor(u),
+                  ),
+                  if (_users.length > 2)
+                    IconButton(
                       icon: const Icon(Icons.delete_outline, size: 20),
                       onPressed: () => _deleteUser(u),
-                    )
-                  : null,
+                    ),
+                ],
+              ),
+              onTap: () => _editUserName(u),
             )),
         ListTile(
           leading: const Icon(Icons.add),
@@ -154,6 +157,60 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         const Divider(),
       ],
+    );
+  }
+
+  void _editUserName(UserProfile user) {
+    final ctrl = TextEditingController(text: user.name);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Rename User'),
+        content: TextField(
+          controller: ctrl,
+          decoration: const InputDecoration(labelText: 'Name'),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () {
+              if (ctrl.text.isNotEmpty) {
+                user.name = ctrl.text;
+                _storage.updateUser(user);
+                _load();
+                Navigator.pop(ctx);
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _editUserColor(UserProfile user) {
+    int selectedColor = user.colorValue;
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Pick Color'),
+          content: _colorGrid(selectedColor, (c) => setDialogState(() => selectedColor = c)),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            TextButton(
+              onPressed: () {
+                user.colorValue = selectedColor;
+                _storage.updateUser(user);
+                _load();
+                Navigator.pop(ctx);
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
