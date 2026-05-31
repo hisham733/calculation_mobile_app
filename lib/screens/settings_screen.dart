@@ -12,6 +12,7 @@ import '../helpers/calculations.dart';
 import '../main.dart';
 
 const String kBudgetRollover = 'budget_rollover';
+const String kTemplatesKey = 'expense_templates';
 
 /// Settings screen for managing users, categories, appearance, and data.
 class SettingsScreen extends StatefulWidget {
@@ -81,6 +82,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _appearanceSection(appState),
           _budgetSection(),
           _recurringSection(),
+          _templatesSection(),
           _actionsSection(),
         ],
       ),
@@ -167,6 +169,55 @@ class _SettingsScreenState extends State<SettingsScreen> {
         SnackBar(content: Text('${expense.description} will no longer repeat')),
       );
     }
+  }
+
+  Widget _templatesSection() {
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _loadTemplates(),
+      builder: (ctx, snap) {
+        final templates = snap.data ?? [];
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _sectionHeader('Templates'),
+            if (templates.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Text('No templates — save from expense detail',
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13)),
+              )
+            else
+              ...templates.asMap().entries.map((entry) => ListTile(
+                    leading: const Icon(Icons.description_outlined, size: 20),
+                    title: Text(entry.value['description'] ?? ''),
+                    subtitle: Text(Calculations.currency((entry.value['total_amount'] as num?)?.toDouble() ?? 0)),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete_outline, size: 20),
+                      onPressed: () async {
+                        final list = await _loadTemplates();
+                        list.removeAt(entry.key);
+                        await _saveTemplates(list);
+                        setState(() {});
+                      },
+                    ),
+                  )),
+            const Divider(),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> _loadTemplates() async {
+    final prefs = await SharedPreferences.getInstance();
+    final s = prefs.getString(kTemplatesKey);
+    if (s == null) return [];
+    return (jsonDecode(s) as List).cast<Map<String, dynamic>>();
+  }
+
+  Future<void> _saveTemplates(List<Map<String, dynamic>> list) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(kTemplatesKey, jsonEncode(list));
   }
 
   Widget _usersSection() {

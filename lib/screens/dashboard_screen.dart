@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
@@ -627,6 +628,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       icon: const Icon(Icons.close, size: 18),
                       label: const Text('Close'),
                       onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.description_outlined, size: 18),
+                      label: const Text('Template'),
+                      onPressed: () async {
+                        final prefs = await SharedPreferences.getInstance();
+                        final key = 'expense_templates';
+                        final existing = prefs.getString(key);
+                        final list = existing != null ? (jsonDecode(existing) as List).cast<Map<String, dynamic>>() : <Map<String, dynamic>>[];
+                        list.add({
+                          'description': expense.description,
+                          'total_amount': expense.totalAmount,
+                          'category_id': expense.categoryId,
+                          'paid_by_id': expense.paidById,
+                          'participant_ids': expense.participantIds.join(','),
+                          'splits': jsonEncode(expense.splits),
+                          'split_mode': expense.splitMode.name,
+                        });
+                        await prefs.setString(key, jsonEncode(list));
+                        if (ctx.mounted) {
+                          ScaffoldMessenger.of(ctx).showSnackBar(
+                            const SnackBar(content: Text('Saved as template'), duration: Duration(milliseconds: 800)),
+                          );
+                        }
+                      },
                     ),
                   ),
                   const SizedBox(width: 12),
