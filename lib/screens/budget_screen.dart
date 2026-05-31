@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/expense.dart';
 import '../models/category.dart';
@@ -20,6 +21,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
   List<Category> _categories = [];
   List<Expense> _currentExpenses = [];
   List<Expense> _lastMonthExpenses = [];
+  List<double> _monthlyTotals = [];
   bool _loading = true;
   bool _budgetRollover = true;
 
@@ -37,10 +39,19 @@ class _BudgetScreenState extends State<BudgetScreen> {
     final lastExpenses = await _storage.getExpensesForMonth(lastMonth);
     final prefs = await SharedPreferences.getInstance();
     final rollover = prefs.getBool(kBudgetRollover) ?? true;
+
+    final monthlyTotals = <double>[];
+    for (int i = 5; i >= 0; i--) {
+      final m = DateTime(now.year, now.month - i, 1);
+      final exps = await _storage.getExpensesForMonth(m);
+      monthlyTotals.add(exps.fold(0.0, (s, e) => s + e.totalAmount));
+    }
+
     setState(() {
       _categories = categories;
       _currentExpenses = currentExpenses;
       _lastMonthExpenses = lastExpenses;
+      _monthlyTotals = monthlyTotals;
       _budgetRollover = rollover;
       _loading = false;
     });
@@ -90,6 +101,8 @@ class _BudgetScreenState extends State<BudgetScreen> {
                 children: [
                   if (total > 0) _pieChart(spending, total),
                   if (total > 0) const SizedBox(height: 24),
+                  _monthlyChart(),
+                  const SizedBox(height: 24),
                   ..._categories.map((c) => _budgetTile(c, spending[c.id] ?? 0)),
                 ],
               ),
@@ -292,6 +305,85 @@ class _BudgetScreenState extends State<BudgetScreen> {
           ],
         ),
       ],
+    );
+  }
+
+  Widget _monthlyChart() {
+    final cs = Theme.of(context).colorScheme;
+    final now = DateTime.now();
+    final maxVal = _monthlyTotals.reduce((a, b) => a > b ? a : b);
+    if (maxVal == 0) return const SizedBox.shrink();
+
+    final bars = _monthlyTotals.asMap().entries.map((e) {
+      final month = DateTime(now.year, now.month - (5 - e.key), 1);
+      final abbr = DateFormat('MMM').format(month);
+      return BarChartGroupData(
+        x: e.key,
+        barRods: [
+          BarChartRodData(
+            toY: e.value,
+            color: cs.primary.withValues(alpha: 0.4 + (e.key / 6) * 0.6),
+            width: 20,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+          ),
+        ],
+      );
+    }).toList();
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Monthly Comparison',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: cs.onSurface)),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 160,
+              child: BarChart(
+                BarChartData(
+                  alignment: BarChartAlignment.spaceAround,
+                  maxY: maxVal * 1.2,
+                  barTouchData: BarTouchData(
+                    touchTooltipData: BarTouchTooltipData(
+                      getTooltipItem: (group, _, rod, __) =>
+                        BarTooltipItem(Calculations.currency(rod.toY), TextStyle(color: cs.onSurface, fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                  titlesData: FlTitlesData(
+                    leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        getTitlesWidget: (v, _) {
+                          final idx = v.toInt();
+                          if (idx < 0 || idx >= _monthlyTotals.length) return const SizedBox.shrink();
+                          final month = DateTime(now.year, now.month - (5 - idx), 1);
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(DateFormat('MMM').format(month), style: const TextStyle(fontSize: 10)),
+                          );
+                        },
+                      ),
+                    ),
+                    topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  ),
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                    horizontalInterval: maxVal / 4,
+                    getDrawingHorizontalLine: (_) => FlLine(color: cs.outlineVariant.withValues(alpha: 0.3), strokeWidth: 1),
+                  ),
+                  borderData: FlBorderData(show: false),
+                  barGroups: bars,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
