@@ -8,6 +8,7 @@ import '../models/expense.dart';
 import '../models/user_profile.dart';
 import '../models/category.dart';
 import '../services/storage_provider.dart';
+import '../services/activity_logger.dart';
 import '../helpers/calculations.dart';
 
 /// Form screen for adding or editing an expense.
@@ -508,11 +509,17 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       return;
     }
     if (!context.mounted) return;
+    final desc = expense.description;
+    final amount = expense.totalAmount;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(_isEditing ? 'Expense updated' : 'Expense added'),
         duration: const Duration(milliseconds: 800),
       ),
+    );
+    ActivityLogger.log(
+      action: _isEditing ? 'edit_expense' : 'add_expense',
+      description: _isEditing ? 'Edited "$desc"' : 'Added "$desc" ${Calculations.currency(amount)}',
     );
     await Future.delayed(const Duration(milliseconds: 400));
     if (context.mounted) Navigator.pop(context);

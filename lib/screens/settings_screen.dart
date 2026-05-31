@@ -7,7 +7,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_profile.dart';
 import '../models/category.dart';
 import '../models/expense.dart';
+import '../models/activity_log.dart';
 import '../services/storage_provider.dart';
+import '../services/activity_logger.dart';
 import '../helpers/calculations.dart';
 import '../main.dart';
 
@@ -83,6 +85,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _budgetSection(),
           _recurringSection(),
           _templatesSection(),
+          _activityLogSection(),
           _actionsSection(),
         ],
       ),
@@ -278,6 +281,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               if (ctrl.text.isNotEmpty) {
                 user.name = ctrl.text;
                 _storage.updateUser(user);
+                ActivityLogger.log(action: 'rename_user', description: 'Renamed user to "${ctrl.text}"');
                 _load();
                 Navigator.pop(ctx);
               }
@@ -303,6 +307,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onPressed: () {
                 user.colorValue = selectedColor;
                 _storage.updateUser(user);
+                ActivityLogger.log(action: 'edit_user', description: 'Changed color for ${user.name}');
                 _load();
                 Navigator.pop(ctx);
               },
@@ -334,6 +339,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   name: nameCtrl.text,
                   colorValue: _catColors[_users.length % _catColors.length],
                 ));
+                ActivityLogger.log(action: 'add_user', description: 'Added user "${nameCtrl.text}"');
                 _load();
                 Navigator.pop(ctx);
               }
@@ -356,6 +362,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           TextButton(
             onPressed: () {
               _storage.deleteUser(user.id!);
+              ActivityLogger.log(action: 'delete_user', description: 'Deleted user "${user.name}"');
               _load();
               Navigator.pop(context);
             },
@@ -408,6 +415,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               TextButton(
                 onPressed: () {
                   _storage.deleteCategory(category.id!);
+                  ActivityLogger.log(action: 'delete_category', description: 'Deleted category "${category.name}"');
                   _load();
                   Navigator.pop(context);
                 },
@@ -418,6 +426,86 @@ class _SettingsScreenState extends State<SettingsScreen> {
         );
       },
     );
+  }
+
+  Widget _activityLogSection() {
+    return FutureBuilder<List<ActivityLog>>(
+      future: ActivityLogger.getLogs(),
+      builder: (ctx, snap) {
+        final logs = snap.data ?? [];
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _sectionHeader('Activity Log'),
+            if (logs.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Text('No activity yet',
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13)),
+              )
+            else ...[
+              ...logs.take(50).map((log) => ListTile(
+                    dense: true,
+                    leading: _logIcon(log.action),
+                    title: Text(ActivityLog.formatAction(log.action),
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+                    subtitle: Text(log.description,
+                        style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                    trailing: Text(_formatTime(log.timestamp),
+                        style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                  )),
+              if (logs.length > 50)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: Text('+ ${logs.length - 50} more',
+                      style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                ),
+            ],
+            const Divider(),
+          ],
+        );
+      },
+    );
+  }
+
+  Icon _logIcon(String action) {
+    switch (action) {
+      case 'add_expense':
+        return const Icon(Icons.add_circle_outline, size: 18, color: Colors.green);
+      case 'edit_expense':
+        return const Icon(Icons.edit_outlined, size: 18, color: Colors.orange);
+      case 'delete_expense':
+        return const Icon(Icons.remove_circle_outline, size: 18, color: Colors.red);
+      case 'add_user':
+        return const Icon(Icons.person_add_outlined, size: 18, color: Colors.green);
+      case 'delete_user':
+        return const Icon(Icons.person_remove_outlined, size: 18, color: Colors.red);
+      case 'rename_user':
+        return const Icon(Icons.edit_outlined, size: 18, color: Colors.blue);
+      case 'add_category':
+        return const Icon(Icons.category_outlined, size: 18, color: Colors.green);
+      case 'delete_category':
+        return const Icon(Icons.remove_circle_outline, size: 18, color: Colors.red);
+      case 'edit_category':
+        return const Icon(Icons.edit_outlined, size: 18, color: Colors.blue);
+      case 'settle':
+        return const Icon(Icons.check_circle_outline, size: 18, color: Colors.teal);
+      case 'reset_all':
+        return const Icon(Icons.warning_amber_outlined, size: 18, color: Colors.red);
+      case 'export_csv':
+        return const Icon(Icons.file_download_outlined, size: 18, color: Colors.indigo);
+      default:
+        return const Icon(Icons.info_outline, size: 18);
+    }
+  }
+
+  String _formatTime(DateTime dt) {
+    final now = DateTime.now();
+    final diff = now.difference(dt);
+    if (diff.inMinutes < 1) return 'just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    return '${diff.inDays}d ago';
   }
 
   Widget _actionsSection() {
@@ -443,6 +531,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   TextButton(
                     onPressed: () {
                       _storage.resetAll();
+                      ActivityLogger.log(action: 'reset_all', description: 'Reset all data');
+                      ActivityLogger.clear();
                       _load();
                       Navigator.pop(context);
                     },
@@ -485,6 +575,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ..click();
     html.Url.revokeObjectUrl(url);
 
+    ActivityLogger.log(action: 'export_csv', description: 'Exported CSV with ${expenses.length} expenses');
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('CSV exported')),
@@ -546,6 +637,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     iconCodePoint: selectedIcon,
                     colorValue: selectedColor,
                   ));
+                  ActivityLogger.log(action: 'add_category', description: 'Added category "${nameCtrl.text}"');
                   _load();
                   Navigator.pop(ctx);
                 }
@@ -604,6 +696,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 category.iconCodePoint = selectedIcon;
                 category.colorValue = selectedColor;
                 _storage.updateCategory(category);
+                ActivityLogger.log(action: 'edit_category', description: 'Edited category "${nameCtrl.text}"');
                 _load();
                 Navigator.pop(ctx);
               },

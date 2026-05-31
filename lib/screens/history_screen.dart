@@ -4,6 +4,7 @@ import '../models/expense.dart';
 import '../models/user_profile.dart';
 import '../models/category.dart';
 import '../services/storage_provider.dart';
+import '../services/activity_logger.dart';
 import '../helpers/calculations.dart';
 import 'add_expense_screen.dart';
 
@@ -416,6 +417,7 @@ class HistoryScreenState extends State<HistoryScreen> {
         onDismissed: (_) async {
           await _storage.deleteExpense(expense.id!);
           load();
+          ActivityLogger.log(action: 'delete_expense', description: 'Deleted "${expense.description}"');
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -424,6 +426,7 @@ class HistoryScreenState extends State<HistoryScreen> {
                 action: SnackBarAction(label: 'Undo', onPressed: () async {
                   _storage.insertExpense(expense);
                   load();
+                  ActivityLogger.log(action: 'add_expense', description: 'Undid delete of "${expense.description}"');
                 }),
               ),
             );

@@ -7,6 +7,7 @@ import '../models/expense.dart';
 import '../models/user_profile.dart';
 import '../models/category.dart';
 import '../services/storage_provider.dart';
+import '../services/activity_logger.dart';
 import '../helpers/calculations.dart';
 import 'add_expense_screen.dart';
 
@@ -483,6 +484,7 @@ class DashboardScreenState extends State<DashboardScreen> {
                   final monthKey = DateFormat('yyyy-MM').format(now);
                   await prefs.setInt('settled_$monthKey', now.millisecondsSinceEpoch);
                   setState(() => _settledAt = now);
+                  ActivityLogger.log(action: 'settle', description: 'Settled up for $monthKey');
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Marked as settled')),
@@ -519,6 +521,7 @@ class DashboardScreenState extends State<DashboardScreen> {
           try {
             await _storage.deleteExpense(expense.id!);
             load();
+            ActivityLogger.log(action: 'delete_expense', description: 'Deleted "${expense.description}"');
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -528,6 +531,7 @@ class DashboardScreenState extends State<DashboardScreen> {
                     try {
                       await _storage.insertExpense(expense);
                       load();
+                      ActivityLogger.log(action: 'add_expense', description: 'Undid delete of "${expense.description}"');
                     } catch (_) {}
                   }),
                 ),
