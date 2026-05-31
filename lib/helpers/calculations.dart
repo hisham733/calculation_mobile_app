@@ -70,8 +70,8 @@ class Calculations {
     return map;
   }
 
-  /// Formats a number as currency string (e.g. "$12.34").
+  /// Formats a number as currency string (e.g. "RM12.34").
   static String currency(double value) {
-    return NumberFormat.currency(symbol: '\$', decimalDigits: 2).format(value);
+    return NumberFormat.currency(symbol: 'RM', decimalDigits: 2).format(value);
   }
 }
