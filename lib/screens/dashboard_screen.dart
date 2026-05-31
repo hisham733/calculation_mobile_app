@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/expense.dart';
@@ -117,6 +118,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             _totalSpentCard(summary),
             const SizedBox(height: 12),
             _userCards(summary),
+            if (_expenses.isNotEmpty) ...[
+              const SizedBox(height: 20),
+              _spendingChart(),
+            ],
             const SizedBox(height: 20),
             TextField(
               controller: _searchCtrl,
@@ -254,6 +259,80 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           );
         }).toList(),
+      ),
+    );
+  }
+
+  Widget _spendingChart() {
+    final cs = Theme.of(context).colorScheme;
+    final now = DateTime.now();
+    final daysInMonth = DateTime(now.year, now.month + 1, 0).day;
+
+    final dailyTotals = List.filled(daysInMonth, 0.0);
+    for (final e in _expenses) {
+      final day = e.date.day - 1;
+      if (day >= 0 && day < daysInMonth) {
+        dailyTotals[day] += e.totalAmount;
+      }
+    }
+
+    final maxVal = dailyTotals.reduce((a, b) => a > b ? a : b);
+    if (maxVal == 0) return const SizedBox.shrink();
+
+    final spots = dailyTotals.asMap().entries
+        .where((e) => e.value > 0)
+        .map((e) => FlSpot(e.key.toDouble() + 1, e.value))
+        .toList();
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Daily Spending', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: cs.onSurface)),
+            const SizedBox(height: 4),
+            Text(DateFormat('MMMM yyyy').format(now),
+                style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 140,
+              child: LineChart(
+                LineChartData(
+                  gridData: FlGridData(show: false),
+                  titlesData: FlTitlesData(
+                    leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 22,
+                        getTitlesWidget: (v, _) {
+                          if (v == 1 || v == daysInMonth / 2 || v == daysInMonth) {
+                            return Text('${v.toInt()}', style: const TextStyle(fontSize: 10));
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      ),
+                    ),
+                    topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  ),
+                  borderData: FlBorderData(show: false),
+                  lineBarsData: [
+                    LineChartBarData(
+                      spots: spots,
+                      isCurved: true,
+                      color: cs.primary,
+                      barWidth: 2.5,
+                      dotData: FlDotData(show: false),
+                      belowBarData: BarAreaData(show: true, color: cs.primary.withValues(alpha: 0.08)),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
