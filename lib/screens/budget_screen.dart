@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/expense.dart';
 import '../models/category.dart';
 import '../services/storage_provider.dart';
 import '../helpers/calculations.dart';
+import 'settings_screen.dart';
 
 /// Budget screen showing spending by category with pie chart and progress bars.
 class BudgetScreen extends StatefulWidget {
@@ -19,6 +21,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
   List<Expense> _currentExpenses = [];
   List<Expense> _lastMonthExpenses = [];
   bool _loading = true;
+  bool _budgetRollover = true;
 
   @override
   void initState() {
@@ -32,16 +35,20 @@ class _BudgetScreenState extends State<BudgetScreen> {
     final currentExpenses = await _storage.getExpensesForMonth(now);
     final lastMonth = DateTime(now.year, now.month - 1, 1);
     final lastExpenses = await _storage.getExpensesForMonth(lastMonth);
+    final prefs = await SharedPreferences.getInstance();
+    final rollover = prefs.getBool(kBudgetRollover) ?? true;
     setState(() {
       _categories = categories;
       _currentExpenses = currentExpenses;
       _lastMonthExpenses = lastExpenses;
+      _budgetRollover = rollover;
       _loading = false;
     });
   }
 
   /// Computes unused budget from last month that rolls over to current month.
   double _rollover(Category cat) {
+    if (!_budgetRollover) return 0;
     final budget = cat.monthlyBudget ?? 0;
     if (budget <= 0) return 0;
     final spent = _lastMonthExpenses

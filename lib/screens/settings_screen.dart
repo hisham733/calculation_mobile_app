@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_profile.dart';
 import '../models/category.dart';
 import '../services/storage_provider.dart';
 import '../helpers/calculations.dart';
 import '../main.dart';
+
+const String kBudgetRollover = 'budget_rollover';
 
 /// Settings screen for managing users, categories, appearance, and data.
 class SettingsScreen extends StatefulWidget {
@@ -25,6 +28,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   List<UserProfile> _users = [];
   List<Category> _categories = [];
   bool _loading = true;
+  bool _budgetRollover = true;
 
   @override
   void initState() {
@@ -35,9 +39,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _load() async {
     final users = await _storage.getUsers();
     final categories = await _storage.getCategories();
+    final prefs = await SharedPreferences.getInstance();
+    final rollover = prefs.getBool(kBudgetRollover) ?? true;
     setState(() {
       _users = users;
       _categories = categories;
+      _budgetRollover = rollover;
       _loading = false;
     });
   }
@@ -57,6 +64,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _usersSection(),
           _categoriesSection(),
           _appearanceSection(appState),
+          _budgetSection(),
           _actionsSection(),
         ],
       ),
@@ -79,6 +87,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
               appState?.setThemeMode(v ? ThemeMode.dark : ThemeMode.light);
             },
           ),
+        ),
+        const Divider(),
+      ],
+    );
+  }
+
+  Widget _budgetSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionHeader('Budget'),
+        SwitchListTile(
+          secondary: const Icon(Icons.autorenew),
+          title: const Text('Rollover unused budget'),
+          subtitle: const Text('Carry over leftover budget to next month'),
+          value: _budgetRollover,
+          onChanged: (v) async {
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setBool(kBudgetRollover, v);
+            setState(() => _budgetRollover = v);
+          },
         ),
         const Divider(),
       ],
