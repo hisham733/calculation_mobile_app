@@ -93,8 +93,8 @@ class _BudgetScreenState extends State<BudgetScreen> {
   /// Pie chart showing spending distribution across categories with active expenses.
   Widget _pieChart(Map<String?, double> spending, double total) {
     final colors = [
-      Colors.indigo, Colors.orange, Colors.teal, Colors.pink,
-      Colors.amber, Colors.cyan, Colors.deepPurple, Colors.lime,
+      Colors.indigo.shade400, Colors.orange.shade400, Colors.teal.shade400, Colors.pink.shade400,
+      Colors.amber.shade400, Colors.cyan.shade400, Colors.deepPurple.shade400, Colors.lime.shade600,
     ];
 
     final visible = _categories.where((c) => (spending[c.id] ?? 0) > 0).toList();

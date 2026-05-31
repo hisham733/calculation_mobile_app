@@ -136,9 +136,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
           padding: const EdgeInsets.only(bottom: 80),
           children: [
             _monthNav(monthText),
+            const Divider(height: 1),
             _filterBar(),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: TextField(
                 controller: _searchCtrl,
                 decoration: InputDecoration(
@@ -153,8 +154,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           },
                         )
                       : null,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
                   isDense: true,
                 ),
                 onChanged: (v) => setState(() => _searchQuery = v),
@@ -175,8 +174,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     items: const [
                       DropdownMenuItem(value: SortMode.dateDesc, child: Text('Newest', style: TextStyle(fontSize: 13))),
                       DropdownMenuItem(value: SortMode.dateAsc, child: Text('Oldest', style: TextStyle(fontSize: 13))),
-                      DropdownMenuItem(value: SortMode.amountDesc, child: Text('Amount ↓', style: TextStyle(fontSize: 13))),
-                      DropdownMenuItem(value: SortMode.amountAsc, child: Text('Amount ↑', style: TextStyle(fontSize: 13))),
+                      DropdownMenuItem(value: SortMode.amountDesc, child: Text('Amount \u2193', style: TextStyle(fontSize: 13))),
+                      DropdownMenuItem(value: SortMode.amountAsc, child: Text('Amount \u2191', style: TextStyle(fontSize: 13))),
                       DropdownMenuItem(value: SortMode.category, child: Text('Category', style: TextStyle(fontSize: 13))),
                     ],
                     onChanged: (v) {
@@ -206,9 +205,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 ),
               )
             else ...[
+              const SizedBox(height: 4),
               ..._filtered.map((e) => _expenseTile(context, e)),
-              const Divider(height: 1),
-              // Total row at bottom of expense list
+              const Divider(height: 1, indent: 16, endIndent: 16),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 child: Row(
@@ -282,44 +281,57 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final splitStr = expense.splitMode == SplitMode.percentage
         ? '${expense.splitPercentageA?.toInt() ?? 50}/${expense.splitPercentageB?.toInt() ?? 50}'
         : 'Split';
+    final cs = Theme.of(context).colorScheme;
 
-    return Dismissible(
-      key: ValueKey(expense.id),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 16),
-        color: Colors.red,
-        child: const Icon(Icons.delete, color: Colors.white),
-      ),
-      onDismissed: (_) async {
-        await _storage.deleteExpense(expense.id!);
-        _load();
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('${expense.description} deleted'),
-              action: SnackBarAction(label: 'Undo', onPressed: () async {
-                _storage.insertExpense(expense);
-                _load();
-              }),
-            ),
-          );
-        }
-      },
-      child: ListTile(
-        onTap: () => _editExpense(context, expense),
-        leading: Icon(IconData(cat?.iconCodePoint ?? 0xe3e9, fontFamily: 'MaterialIcons'), color: Colors.grey[600]),
-        title: Text(expense.description),
-        subtitle: Text('$userName · $dateStr · $catName'),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(Calculations.currency(expense.totalAmount),
-                style: const TextStyle(fontWeight: FontWeight.bold)),
-            Text(splitStr, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
-          ],
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+      child: Dismissible(
+        key: ValueKey(expense.id),
+        direction: DismissDirection.endToStart,
+        background: Container(
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 20),
+          decoration: BoxDecoration(
+            color: Colors.red.shade400,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: const Icon(Icons.delete, color: Colors.white),
+        ),
+        onDismissed: (_) async {
+          await _storage.deleteExpense(expense.id!);
+          _load();
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('${expense.description} deleted'),
+                behavior: SnackBarBehavior.floating,
+                action: SnackBarAction(label: 'Undo', onPressed: () async {
+                  _storage.insertExpense(expense);
+                  _load();
+                }),
+              ),
+            );
+          }
+        },
+        child: ListTile(
+          onTap: () => _editExpense(context, expense),
+          leading: CircleAvatar(
+            backgroundColor: cs.primaryContainer,
+            child: Icon(IconData(cat?.iconCodePoint ?? 0xe3e9, fontFamily: 'MaterialIcons'),
+                color: cs.onPrimaryContainer, size: 20),
+          ),
+          title: Text(expense.description),
+          subtitle: Text('$userName \u00b7 $dateStr \u00b7 $catName',
+              style: TextStyle(color: cs.onSurface.withValues(alpha: 0.6))),
+          trailing: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(Calculations.currency(expense.totalAmount),
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text(splitStr, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+            ],
+          ),
         ),
       ),
     );

@@ -22,7 +22,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<Category> _categories = [];
   List<Expense> _expenses = [];
   bool _loading = true;
-  DateTime? _settledAt; // Timestamp when user marked the month as settled
+  DateTime? _settledAt;
   final _searchCtrl = TextEditingController();
   String _searchQuery = '';
 
@@ -38,7 +38,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.dispose();
   }
 
-  /// Loads users, categories, expenses for the current month, and settlement state.
   Future<void> _load() async {
     final users = await _storage.getUsers();
     final categories = await _storage.getCategories();
@@ -56,7 +55,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
-  /// Filters expenses by search query (matches description and notes).
   List<Expense> get _filtered {
     if (_searchQuery.isEmpty) return _expenses;
     final q = _searchQuery.toLowerCase();
@@ -95,7 +93,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Dashboard')),
-      // FAB for quick access — always visible at bottom center
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _addExpense(context),
         icon: const Icon(Icons.add),
@@ -112,8 +109,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             _totalSpentCard(summary),
             const SizedBox(height: 12),
             _perUserRow(summary),
-            const SizedBox(height: 16),
-            // Search bar filtering expenses by description/notes
+            const SizedBox(height: 20),
             TextField(
               controller: _searchCtrl,
               decoration: InputDecoration(
@@ -128,14 +124,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         },
                       )
                     : null,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                contentPadding: const EdgeInsets.symmetric(vertical: 0),
               ),
               onChanged: (v) => setState(() => _searchQuery = v),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             Text('Recent Expenses', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
             if (_filtered.isEmpty)
               _emptyState()
             else
@@ -172,25 +166,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  /// Card showing total spent across all users this month.
   Widget _totalSpentCard(MonthlySummary summary) {
+    final cs = Theme.of(context).colorScheme;
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 24),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            colors: [cs.primaryContainer, cs.primaryContainer.withValues(alpha: 0.4)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 28),
         child: Column(
           children: [
             Text('Total Spent This Month',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey)),
-            const SizedBox(height: 4),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onPrimaryContainer.withValues(alpha: 0.7))),
+            const SizedBox(height: 6),
             Text(Calculations.currency(summary.totalSpent),
-                style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold)),
+                style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: cs.onPrimaryContainer)),
           ],
         ),
       ),
     );
   }
 
-  /// Side-by-side cards showing each user's paid amount vs their share.
   Widget _perUserRow(MonthlySummary summary) {
     return Row(
       children: [
@@ -202,72 +203,87 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _userCard(UserProfile user, double paid, double share) {
+    final cs = Theme.of(context).colorScheme;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 10, height: 10,
-                  decoration: BoxDecoration(shape: BoxShape.circle, color: user.color),
-                ),
-                const SizedBox(width: 6),
-                Text(user.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-              ],
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: user.color,
+              child: Text(user.name[0].toUpperCase(),
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
             ),
             const SizedBox(height: 8),
-            Text('Paid', style: TextStyle(fontSize: 11, color: Colors.grey[600])),
-            Text(Calculations.currency(paid),
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            Text('Share', style: TextStyle(fontSize: 11, color: Colors.grey[600])),
-            Text(Calculations.currency(share), style: const TextStyle(fontSize: 16)),
+            Text(user.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _labelValue('Paid', Calculations.currency(paid), cs),
+                Container(width: 1, height: 30, color: Colors.grey.shade300),
+                _labelValue('Share', Calculations.currency(share), cs),
+              ],
+            ),
           ],
         ),
       ),
     );
   }
 
-  /// Settlement card showing who owes whom, with a "Mark as Settled" button.
-  /// State is persisted via SharedPreferences per month.
+  Widget _labelValue(String label, String value, ColorScheme cs) {
+    return Column(
+      children: [
+        Text(label, style: TextStyle(fontSize: 11, color: cs.onSurface.withValues(alpha: 0.6))),
+        const SizedBox(height: 2),
+        Text(value, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+      ],
+    );
+  }
+
   Widget _settlementCard(MonthlySummary summary) {
     final settled = _settledAt != null;
     final balanced = summary.balanceA == 0;
+    final cs = Theme.of(context).colorScheme;
+
+    Color bgColor, iconColor;
+    IconData icon;
+    String text;
+    if (settled) {
+      bgColor = Colors.green.withValues(alpha: 0.12);
+      iconColor = Colors.green;
+      icon = Icons.check_circle;
+      text = 'All settled this month';
+    } else if (balanced) {
+      bgColor = Colors.green.withValues(alpha: 0.12);
+      iconColor = Colors.green;
+      icon = Icons.balance;
+      text = 'Balanced — nothing to settle';
+    } else {
+      bgColor = Colors.orange.withValues(alpha: 0.12);
+      iconColor = Colors.orange;
+      icon = Icons.swap_horiz;
+      text = summary.settlementText(_users[0].name, _users[1].name);
+    }
 
     return Card(
-      color: settled || balanced
-          ? Colors.green.withValues(alpha: 0.15)
-          : Colors.orange.withValues(alpha: 0.15),
+      color: bgColor,
       child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  settled || balanced ? Icons.check_circle : Icons.swap_horiz,
-                  color: settled || balanced ? Colors.green : Colors.orange,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    settled
-                        ? 'Settled'
-                        : summary.settlementText(_users[0].name, _users[1].name),
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ],
+            CircleAvatar(
+              backgroundColor: iconColor.withValues(alpha: 0.15),
+              child: Icon(icon, color: iconColor, size: 22),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(text,
+                  style: const TextStyle(fontWeight: FontWeight.w600), textAlign: TextAlign.start),
             ),
             if (!settled && !balanced)
-              TextButton.icon(
-                icon: const Icon(Icons.check, size: 18),
-                label: const Text('Mark as Settled'),
+              TextButton(
                 onPressed: () async {
                   final now = DateTime.now();
                   final prefs = await SharedPreferences.getInstance();
@@ -276,10 +292,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   setState(() => _settledAt = now);
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Marked as settled')),
+                      const SnackBar(content: Text('Marked as settled'), behavior: SnackBarBehavior.floating),
                     );
                   }
                 },
+                child: const Text('Settle'),
               ),
           ],
         ),
@@ -287,62 +304,70 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  /// Expense row with swipe-to-delete and tap for detail bottom sheet.
   Widget _expenseTile(BuildContext context, Expense expense) {
     final cat = _categories.where((c) => c.id == expense.categoryId).firstOrNull;
-    return Dismissible(
-      key: ValueKey(expense.id),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 16),
-        color: Colors.red,
-        child: const Icon(Icons.delete, color: Colors.white),
-      ),
-      onDismissed: (_) async {
-        await _storage.deleteExpense(expense.id!);
-        _load();
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('${expense.description} deleted'),
-              action: SnackBarAction(label: 'Undo', onPressed: () async {
-                _storage.insertExpense(expense);
-                _load();
-              }),
-            ),
-          );
-        }
-      },
-      child: ListTile(
-        onTap: () => _showExpenseDetail(context, expense),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-        leading: Icon(IconData(cat?.iconCodePoint ?? 0xe3e9, fontFamily: 'MaterialIcons'), color: Colors.grey[600]),
-        title: Text(expense.description, style: const TextStyle(fontWeight: FontWeight.w500)),
-        subtitle: Text(
-          '${_userName(expense.paidById)} · ${DateFormat('MMM d').format(expense.date)}',
-          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+    final cs = Theme.of(context).colorScheme;
+    return Card(
+      margin: const EdgeInsets.only(bottom: 6),
+      child: Dismissible(
+        key: ValueKey(expense.id),
+        direction: DismissDirection.endToStart,
+        background: Container(
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 20),
+          decoration: BoxDecoration(
+            color: Colors.red.shade400,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: const Icon(Icons.delete, color: Colors.white),
         ),
-        trailing: Text(Calculations.currency(expense.totalAmount),
-            style: const TextStyle(fontWeight: FontWeight.bold)),
+        onDismissed: (_) async {
+          await _storage.deleteExpense(expense.id!);
+          _load();
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('${expense.description} deleted'),
+                behavior: SnackBarBehavior.floating,
+                action: SnackBarAction(label: 'Undo', onPressed: () async {
+                  _storage.insertExpense(expense);
+                  _load();
+                }),
+              ),
+            );
+          }
+        },
+        child: ListTile(
+          onTap: () => _showExpenseDetail(context, expense),
+          leading: CircleAvatar(
+            backgroundColor: cs.primaryContainer,
+            child: Icon(IconData(cat?.iconCodePoint ?? 0xe3e9, fontFamily: 'MaterialIcons'),
+                color: cs.onPrimaryContainer, size: 20),
+          ),
+          title: Text(expense.description, style: const TextStyle(fontWeight: FontWeight.w500)),
+          subtitle: Text(
+            '${_userName(expense.paidById)} \u00b7 ${DateFormat('MMM d').format(expense.date)}',
+            style: TextStyle(fontSize: 12, color: cs.onSurface.withValues(alpha: 0.6)),
+          ),
+          trailing: Text(Calculations.currency(expense.totalAmount),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+        ),
       ),
     );
   }
 
-  /// Shows expense details in a modal bottom sheet with edit action.
   void _showExpenseDetail(BuildContext context, Expense expense) {
     final cat = _categories.where((c) => c.id == expense.categoryId).firstOrNull;
     final user = _users.where((u) => u.id == expense.paidById).firstOrNull;
+    final cs = Theme.of(context).colorScheme;
+
     showModalBottomSheet(
       context: context,
       builder: (ctx) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(ctx).viewInsets.bottom,
-        ),
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Drag handle
             Container(
               width: 40, height: 4,
               margin: const EdgeInsets.only(top: 12, bottom: 8),
@@ -355,7 +380,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
               padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
               child: Row(
                 children: [
-                  Icon(IconData(cat?.iconCodePoint ?? 0xe3e9, fontFamily: 'MaterialIcons'), size: 28),
+                  CircleAvatar(
+                    backgroundColor: cs.primaryContainer,
+                    child: Icon(IconData(cat?.iconCodePoint ?? 0xe3e9, fontFamily: 'MaterialIcons'),
+                        color: cs.onPrimaryContainer, size: 24),
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(expense.description,
@@ -388,7 +417,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ],
                   if (expense.notes.isNotEmpty) ...[
                     const SizedBox(height: 16),
-                    _detailRow(Icons.notes, 'Notes', expense.notes),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.notes, size: 18, color: Colors.grey[600]),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Notes', style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+                              const SizedBox(height: 2),
+                              Text(expense.notes),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ],
               ),
@@ -425,13 +470,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  /// Renders a single info row in the detail bottom sheet.
   Widget _detailRow(IconData icon, String label, String value) {
     return Row(
       children: [
         Icon(icon, size: 18, color: Colors.grey[600]),
         const SizedBox(width: 12),
-        Text('$label: ', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+        Text('$label ', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
         Expanded(
           child: Text(value,
               style: const TextStyle(fontWeight: FontWeight.w500),
