@@ -82,16 +82,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _sectionHeader('Appearance'),
-        ListTile(
-          leading: Icon(
-            appState?.themeMode == ThemeMode.dark ? Icons.dark_mode : Icons.light_mode,
-          ),
-          title: const Text('Dark Mode'),
-          trailing: Switch(
-            value: appState?.themeMode == ThemeMode.dark,
-            onChanged: (v) {
-              appState?.setThemeMode(v ? ThemeMode.dark : ThemeMode.light);
-            },
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: SegmentedButton<ThemeMode>(
+            segments: const [
+              ButtonSegment(value: ThemeMode.light, icon: Icon(Icons.light_mode), label: Text('Light')),
+              ButtonSegment(value: ThemeMode.system, icon: Icon(Icons.brightness_auto), label: Text('Auto')),
+              ButtonSegment(value: ThemeMode.dark, icon: Icon(Icons.dark_mode), label: Text('Dark')),
+            ],
+            selected: {appState?.themeMode ?? ThemeMode.system},
+            onSelectionChanged: (v) => appState?.setThemeMode(v.first),
           ),
         ),
         const Divider(),

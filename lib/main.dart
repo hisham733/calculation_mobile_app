@@ -263,6 +263,12 @@ class SharedExpenseAppState extends State<SharedExpenseApp> {
           valueIndicatorColor: scheme.primary,
           valueIndicatorTextStyle: TextStyle(color: scheme.onPrimary),
         ),
+        pageTransitionsTheme: PageTransitionsTheme(
+          builders: {
+            TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
+            TargetPlatform.iOS: FadeUpwardsPageTransitionsBuilder(),
+          },
+        ),
       );
     }
 
