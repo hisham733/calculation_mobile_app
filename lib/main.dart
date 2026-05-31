@@ -4,6 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'services/storage_provider.dart';
 import 'screens/home_screen.dart';
 
+const String kThemeMode = 'theme_mode';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
@@ -22,7 +24,7 @@ void main() async {
   final storage = createStorage();
   await storage.init();
   final prefs = await SharedPreferences.getInstance();
-  final themeMode = ThemeMode.values[prefs.getInt('theme_mode') ?? 0];
+  final themeMode = ThemeMode.values[prefs.getInt(kThemeMode) ?? 0];
   runApp(SharedExpenseApp(storage: storage, initialTheme: themeMode));
 }
 
@@ -53,7 +55,7 @@ class SharedExpenseAppState extends State<SharedExpenseApp> {
 
   void setThemeMode(ThemeMode mode) {
     setState(() => _themeMode = mode);
-    SharedPreferences.getInstance().then((p) => p.setInt('theme_mode', mode.index));
+    SharedPreferences.getInstance().then((p) => p.setInt(kThemeMode, mode.index));
   }
 
   @override
