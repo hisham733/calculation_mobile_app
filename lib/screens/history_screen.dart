@@ -44,17 +44,26 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Future<void> _load() async {
-    final users = await _storage.getUsers();
-    final categories = await _storage.getCategories();
-    final expenses = _searchAllMonths
-        ? await _storage.getAllExpenses()
-        : await _storage.getExpensesForMonth(_selectedMonth);
-    setState(() {
-      _users = users;
-      _categories = categories;
-      _expenses = expenses;
-      _loading = false;
-    });
+    try {
+      final users = await _storage.getUsers();
+      final categories = await _storage.getCategories();
+      final expenses = _searchAllMonths
+          ? await _storage.getAllExpenses()
+          : await _storage.getExpensesForMonth(_selectedMonth);
+      setState(() {
+        _users = users;
+        _categories = categories;
+        _expenses = expenses;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() => _loading = false);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load: $e')),
+        );
+      }
+    }
   }
   void _changeMonth(int delta) {
     setState(() {

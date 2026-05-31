@@ -387,10 +387,18 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       splits: splits,
     );
 
-    if (_isEditing) {
-      await _storage.updateExpense(expense);
-    } else {
-      await _storage.insertExpense(expense);
+    try {
+      if (_isEditing) {
+        await _storage.updateExpense(expense);
+      } else {
+        await _storage.insertExpense(expense);
+      }
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to save: $e')),
+      );
+      return;
     }
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
