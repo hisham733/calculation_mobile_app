@@ -191,9 +191,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _sectionHeader(String title) {
+    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-      child: Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.grey)),
+      child: Text(title, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: cs.onSurfaceVariant)),
     );
   }
 
@@ -325,7 +326,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               child: Icon(
                 IconData(icon, fontFamily: 'MaterialIcons'),
-                color: isSelected ? Theme.of(context).colorScheme.primary : Colors.grey[600],
+                color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           );

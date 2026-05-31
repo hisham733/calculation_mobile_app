@@ -169,23 +169,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _totalSpentCard(MonthlySummary summary) {
     final cs = Theme.of(context).colorScheme;
     return Card(
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            colors: [cs.primaryContainer, cs.primaryContainer.withValues(alpha: 0.4)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 28),
         child: Column(
           children: [
             Text('Total Spent This Month',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onPrimaryContainer.withValues(alpha: 0.7))),
-            const SizedBox(height: 6),
+                style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant, letterSpacing: 0.5)),
+            const SizedBox(height: 8),
             Text(Calculations.currency(summary.totalSpent),
-                style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: cs.onPrimaryContainer)),
+                style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: cs.onSurface, letterSpacing: -0.5)),
+            const SizedBox(height: 4),
+            Text(DateFormat('MMMM yyyy').format(DateTime.now()),
+                style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
           ],
         ),
       ),
@@ -247,40 +243,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final balanced = summary.balanceA == 0;
     final cs = Theme.of(context).colorScheme;
 
-    Color bgColor, iconColor;
+    Color bgColor, iconColor, textColor;
     IconData icon;
     String text;
     if (settled) {
-      bgColor = Colors.green.withValues(alpha: 0.12);
-      iconColor = Colors.green;
-      icon = Icons.check_circle;
+      bgColor = cs.primary.withValues(alpha: 0.08);
+      iconColor = cs.primary;
+      textColor = cs.primary;
+      icon = Icons.check_circle_outline;
       text = 'All settled this month';
     } else if (balanced) {
-      bgColor = Colors.green.withValues(alpha: 0.12);
-      iconColor = Colors.green;
+      bgColor = cs.secondary.withValues(alpha: 0.08);
+      iconColor = cs.secondary;
+      textColor = cs.secondary;
       icon = Icons.balance;
-      text = 'Balanced — nothing to settle';
+      text = 'Balanced \u2014 nothing to settle';
     } else {
-      bgColor = Colors.orange.withValues(alpha: 0.12);
-      iconColor = Colors.orange;
+      bgColor = const Color(0xFFC9A94E).withValues(alpha: 0.1);
+      iconColor = const Color(0xFFC9A94E);
+      textColor = const Color(0xFFC9A94E);
       icon = Icons.swap_horiz;
       text = summary.settlementText(_users[0].name, _users[1].name);
     }
 
     return Card(
       color: bgColor,
+      margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           children: [
-            CircleAvatar(
-              backgroundColor: iconColor.withValues(alpha: 0.15),
-              child: Icon(icon, color: iconColor, size: 22),
-            ),
+            Icon(icon, color: iconColor, size: 24),
             const SizedBox(width: 12),
             Expanded(
               child: Text(text,
-                  style: const TextStyle(fontWeight: FontWeight.w600), textAlign: TextAlign.start),
+                  style: TextStyle(fontWeight: FontWeight.w600, color: cs.onSurface),
+                  textAlign: TextAlign.start),
             ),
             if (!settled && !balanced)
               TextButton(
@@ -292,11 +290,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   setState(() => _settledAt = now);
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Marked as settled'), behavior: SnackBarBehavior.floating),
+                      const SnackBar(content: Text('Marked as settled')),
                     );
                   }
                 },
-                child: const Text('Settle'),
+                child: Text('Settle', style: TextStyle(color: iconColor, fontWeight: FontWeight.w600)),
               ),
           ],
         ),
@@ -420,13 +418,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.notes, size: 18, color: Colors.grey[600]),
+                        Icon(Icons.notes, size: 18, color: cs.onSurfaceVariant),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Notes', style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+                              Text('Notes', style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
                               const SizedBox(height: 2),
                               Text(expense.notes),
                             ],
@@ -471,11 +469,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _detailRow(IconData icon, String label, String value) {
+    final cs = Theme.of(context).colorScheme;
     return Row(
       children: [
-        Icon(icon, size: 18, color: Colors.grey[600]),
+        Icon(icon, size: 18, color: cs.onSurfaceVariant),
         const SizedBox(width: 12),
-        Text('$label ', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+        Text('$label ', style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant)),
         Expanded(
           child: Text(value,
               style: const TextStyle(fontWeight: FontWeight.w500),

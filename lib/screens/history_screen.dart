@@ -329,7 +329,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             children: [
               Text(Calculations.currency(expense.totalAmount),
                   style: const TextStyle(fontWeight: FontWeight.bold)),
-              Text(splitStr, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+              Text(splitStr, style: TextStyle(fontSize: 11, color: cs.onSurface.withValues(alpha: 0.5))),
             ],
           ),
         ),
