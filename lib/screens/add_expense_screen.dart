@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/expense.dart';
 import '../models/user_profile.dart';
 import '../models/category.dart';
@@ -104,6 +106,12 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       appBar: AppBar(
         title: Text(_isEditing ? 'Edit Expense' : 'Add Expense'),
         actions: [
+          if (!_isEditing)
+            IconButton(
+              icon: const Icon(Icons.description_outlined),
+              tooltip: 'Load template',
+              onPressed: _loadTemplate,
+            ),
           TextButton(
             onPressed: _save,
             child: const Text('Save'),
@@ -338,6 +346,68 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       lastDate: DateTime(2030),
     );
     if (picked != null) setState(() => _date = picked);
+  }
+
+  Future<void> _loadTemplate() async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = 'expense_templates';
+    final raw = prefs.getString(key);
+    if (raw == null || raw == '[]') {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No templates saved')),
+        );
+      }
+      return;
+    }
+    final list = (jsonDecode(raw) as List).cast<Map<String, dynamic>>();
+
+    if (!context.mounted) return;
+    final selected = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('Choose a template'),
+        children: list.map((t) => SimpleDialogOption(
+          onPressed: () => Navigator.pop(ctx, t),
+          child: ListTile(
+            dense: true,
+            title: Text(t['description'] as String? ?? ''),
+            subtitle: Text(Calculations.currency((t['total_amount'] as num?)?.toDouble() ?? 0)),
+          ),
+        )).toList(),
+      ),
+    );
+    if (selected == null) return;
+
+    _descController.text = selected['description'] as String? ?? '';
+    _amountController.text = (selected['total_amount'] as num?)?.toStringAsFixed(2) ?? '';
+    final catId = selected['category_id'] as String?;
+    if (catId != null) {
+      _selectedCategory = _categories.where((c) => c.id == catId).firstOrNull;
+    }
+    final payerId = selected['paid_by_id'] as String?;
+    if (payerId != null) {
+      _paidBy = _users.where((u) => u.id == payerId).firstOrNull;
+    }
+    final pids = (selected['participant_ids'] as String? ?? '').split(',').where((s) => s.isNotEmpty).toList();
+    final splitsRaw = selected['splits'] as String?;
+    Map<String, double> splits = {};
+    if (splitsRaw != null && splitsRaw.isNotEmpty) {
+      final decoded = jsonDecode(splitsRaw) as Map<String, dynamic>;
+      splits = decoded.map((k, v) => MapEntry(k, (v as num).toDouble()));
+    }
+    for (final sd in _splitData) {
+      final uid = (sd['user'] as UserProfile).id!;
+      sd['included'] = pids.contains(uid);
+      if (splits.containsKey(uid)) {
+        (sd['controller'] as TextEditingController).text = splits[uid]!.toStringAsFixed(2);
+      }
+    }
+    final modeName = selected['split_mode'] as String?;
+    if (modeName != null) {
+      _splitMode = modeName == 'equal' ? SplitMode.equal : SplitMode.custom;
+    }
+    setState(() {});
   }
 
   Future<void> _save() async {
