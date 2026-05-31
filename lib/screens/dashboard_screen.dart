@@ -628,6 +628,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ],
                     ),
                   ],
+                  if (expense.receiptUrl.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.image_outlined, size: 18, color: cs.onSurfaceVariant),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Receipt', style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
+                              const SizedBox(height: 4),
+                              InkWell(
+                                onTap: () {},
+                                child: Text(expense.receiptUrl,
+                                    style: TextStyle(fontSize: 12, color: cs.primary, decoration: TextDecoration.underline),
+                                    maxLines: 2, overflow: TextOverflow.ellipsis),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),

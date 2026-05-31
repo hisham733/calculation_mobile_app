@@ -26,6 +26,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   final _descController = TextEditingController();
   final _amountController = TextEditingController();
   final _notesController = TextEditingController();
+  final _receiptUrlController = TextEditingController();
 
   late DateTime _date;
   Category? _selectedCategory;
@@ -51,6 +52,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       _splitMode = e.splitMode;
       _isRecurring = e.isRecurring;
       _notesController.text = e.notes;
+      _receiptUrlController.text = e.receiptUrl;
     }
     _load();
   }
@@ -90,6 +92,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     _descController.dispose();
     _amountController.dispose();
     _notesController.dispose();
+    _receiptUrlController.dispose();
     for (final sd in _splitData) {
       (sd['controller'] as TextEditingController).dispose();
     }
@@ -243,6 +246,14 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                   prefixIcon: Icon(Icons.notes),
                 ),
                 maxLines: 2,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _receiptUrlController,
+                decoration: const InputDecoration(
+                  labelText: 'Receipt URL (optional)',
+                  prefixIcon: Icon(Icons.image_outlined),
+                ),
               ),
             ]),
           ],
@@ -453,6 +464,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       isRecurring: _isRecurring,
       recurringInterval: _isRecurring ? 'monthly' : 'none',
       notes: _notesController.text,
+      receiptUrl: _receiptUrlController.text,
       participantIds: splits.keys.toList(),
       splits: splits,
     );

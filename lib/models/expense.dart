@@ -13,6 +13,7 @@ class Expense {
   bool isRecurring;
   String recurringInterval;
   String notes;
+  String receiptUrl;
   List<String> participantIds;
   Map<String, double> splits;
 
@@ -27,6 +28,7 @@ class Expense {
     this.isRecurring = false,
     this.recurringInterval = 'none',
     this.notes = '',
+    this.receiptUrl = '',
     List<String>? participantIds,
     Map<String, double>? splits,
   })  : participantIds = participantIds ?? [],
@@ -45,6 +47,7 @@ class Expense {
         'is_recurring': isRecurring,
         'recurring_interval': recurringInterval,
         'notes': notes,
+        'receipt_url': receiptUrl,
         'participant_ids': participantIds.join(','),
         'splits': jsonEncode(splits),
       };
@@ -107,6 +110,7 @@ class Expense {
           : (map['is_recurring'] as int? ?? 0) == 1,
       recurringInterval: map['recurring_interval'] as String? ?? 'none',
       notes: map['notes'] as String? ?? '',
+      receiptUrl: map['receipt_url'] as String? ?? '',
       participantIds: participantIds,
       splits: splits,
     );
@@ -131,6 +135,7 @@ class Expense {
     bool? isRecurring,
     String? recurringInterval,
     String? notes,
+    String? receiptUrl,
     List<String>? participantIds,
     Map<String, double>? splits,
   }) =>
@@ -145,6 +150,7 @@ class Expense {
         isRecurring: isRecurring ?? this.isRecurring,
         recurringInterval: recurringInterval ?? this.recurringInterval,
         notes: notes ?? this.notes,
+        receiptUrl: receiptUrl ?? this.receiptUrl,
         participantIds: participantIds ?? this.participantIds,
         splits: splits ?? this.splits,
       );

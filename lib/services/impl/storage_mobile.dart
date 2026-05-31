@@ -17,7 +17,7 @@ class StorageServiceMobile implements StorageService {
     final path = join(dbPath, 'shared_expense.db');
     _db = await openDatabase(
       path,
-      version: 4,
+      version: 5,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE users (
@@ -49,6 +49,7 @@ class StorageServiceMobile implements StorageService {
             notes TEXT NOT NULL DEFAULT '',
             participant_ids TEXT NOT NULL DEFAULT '',
             splits TEXT NOT NULL DEFAULT '{}',
+            receipt_url TEXT NOT NULL DEFAULT '',
             FOREIGN KEY (paid_by_id) REFERENCES users(id),
             FOREIGN KEY (category_id) REFERENCES categories(id)
           )
@@ -65,6 +66,9 @@ class StorageServiceMobile implements StorageService {
         if (oldVersion < 4) {
           await db.execute("ALTER TABLE expenses ADD COLUMN participant_ids TEXT NOT NULL DEFAULT ''");
           await db.execute("ALTER TABLE expenses ADD COLUMN splits TEXT NOT NULL DEFAULT '{}'");
+        }
+        if (oldVersion < 5) {
+          await db.execute("ALTER TABLE expenses ADD COLUMN receipt_url TEXT NOT NULL DEFAULT ''");
         }
       },
     );
