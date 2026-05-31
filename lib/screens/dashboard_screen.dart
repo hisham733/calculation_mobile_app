@@ -38,20 +38,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _load() async {
-    final users = await _storage.getUsers();
-    final categories = await _storage.getCategories();
-    final now = DateTime.now();
-    final expenses = await _storage.getExpensesForMonth(now);
-    final prefs = await SharedPreferences.getInstance();
-    final monthKey = DateFormat('yyyy-MM').format(now);
-    final settledTs = prefs.getInt('settled_$monthKey');
-    setState(() {
-      _users = users;
-      _categories = categories;
-      _expenses = expenses;
-      _settledAt = settledTs != null ? DateTime.fromMillisecondsSinceEpoch(settledTs) : null;
-      _loading = false;
-    });
+    try {
+      final users = await _storage.getUsers();
+      final categories = await _storage.getCategories();
+      final now = DateTime.now();
+      final expenses = await _storage.getExpensesForMonth(now);
+      final prefs = await SharedPreferences.getInstance();
+      final monthKey = DateFormat('yyyy-MM').format(now);
+      final settledTs = prefs.getInt('settled_$monthKey');
+      setState(() {
+        _users = users;
+        _categories = categories;
+        _expenses = expenses;
+        _settledAt = settledTs != null ? DateTime.fromMillisecondsSinceEpoch(settledTs) : null;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() => _loading = false);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load: $e')),
+        );
+      }
+    }
   }
 
   List<Expense> get _filtered {
@@ -396,19 +405,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: const Icon(Icons.delete, color: Colors.white),
         ),
         onDismissed: (_) async {
-          await _storage.deleteExpense(expense.id!);
-          _load();
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('${expense.description} deleted'),
-                behavior: SnackBarBehavior.floating,
-                action: SnackBarAction(label: 'Undo', onPressed: () async {
-                  _storage.insertExpense(expense);
-                  _load();
-                }),
-              ),
-            );
+          try {
+            await _storage.deleteExpense(expense.id!);
+            _load();
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('${expense.description} deleted'),
+                  behavior: SnackBarBehavior.floating,
+                  action: SnackBarAction(label: 'Undo', onPressed: () async {
+                    try {
+                      await _storage.insertExpense(expense);
+                      _load();
+                    } catch (_) {}
+                  }),
+                ),
+              );
+            }
+          } catch (_) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Failed to delete')),
+              );
+            }
           }
         },
         child: Row(
